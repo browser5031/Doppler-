@@ -82,6 +82,36 @@ const AdminPage = () => {
     }
   };
 
+  const fetchStuckTasks = async () => {
+    try {
+      const response = await axios.get(`${API}/recovery/stuck-tasks`);
+      setStuckTasks(response.data);
+    } catch (error) {
+      console.error("Error fetching stuck tasks:", error);
+    }
+  };
+
+  const fetchRecoveryStats = async () => {
+    try {
+      const response = await axios.get(`${API}/recovery/stats`);
+      setRecoveryStats(response.data);
+    } catch (error) {
+      console.error("Error fetching recovery stats:", error);
+    }
+  };
+
+  const resetAllStuckTasks = async () => {
+    try {
+      const response = await axios.post(`${API}/recovery/reset-all-stuck`);
+      toast.success(`Reset ${response.data.reset_count} stuck tasks!`);
+      fetchStuckTasks();
+      fetchRecoveryStats();
+      fetchJobs();
+    } catch (error) {
+      toast.error("Failed to reset stuck tasks");
+    }
+  };
+
   const handleSearch = async () => {
     setSearching(true);
     try {
