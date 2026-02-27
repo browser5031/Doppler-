@@ -403,6 +403,15 @@ const AdminPage = () => {
                       Year: {job.year || 'N/A'}
                     </div>
                   </div>
+                  {job.progress_percent > 0 && (
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs text-[#A1A1AA] mb-1">
+                        <span>Progress</span>
+                        <span>{job.progress_percent}%</span>
+                      </div>
+                      <Progress value={job.progress_percent} className="h-2" />
+                    </div>
+                  )}
                   {job.error && (
                     <p className="text-sm text-red-400 mt-2">{job.error}</p>
                   )}
