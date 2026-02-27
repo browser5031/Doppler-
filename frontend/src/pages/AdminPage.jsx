@@ -254,7 +254,7 @@ const AdminPage = () => {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Tabs */}
         <div className="flex gap-4 mb-8">
-          {["search", "jobs", "yearbooks"].map((tab) => (
+          {["search", "jobs", "yearbooks", "recovery"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -265,10 +265,16 @@ const AdminPage = () => {
                     ? "bg-[#00FF94] text-black"
                     : "bg-white/5 text-white hover:bg-white/10"
                 }
+                ${tab === "recovery" && stuckTasks.total_stuck > 0 ? "relative" : ""}
               `}
               data-testid={`tab-${tab}`}
             >
               {tab}
+              {tab === "recovery" && stuckTasks.total_stuck > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {stuckTasks.total_stuck}
+                </span>
+              )}
             </button>
           ))}
         </div>
