@@ -40,12 +40,16 @@ const AdminPage = () => {
     fetchScrapingStatus();
     fetchJobs();
     fetchYearbooks();
+    fetchStuckTasks();
+    fetchRecoveryStats();
     
     // Poll status every 5 seconds
     const interval = setInterval(() => {
       fetchScrapingStatus();
       fetchJobs();
       fetchYearbooks();
+      fetchStuckTasks();
+      fetchRecoveryStats();
     }, 5000);
 
     return () => clearInterval(interval);
