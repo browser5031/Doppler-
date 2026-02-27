@@ -532,6 +532,74 @@ async def search_all_faces(
         logger.error(f"Error searching faces: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============== TASK RECOVERY ENDPOINTS ==============
+
+@api_router.get("/recovery/stuck-tasks")
+async def get_stuck_tasks(timeout_minutes: int = Query(default=30)):
+    """Find all stuck tasks (processing for too long)"""
+    try:
+        stuck = await task_recovery.find_stuck_tasks(timeout_minutes)
+        queued = await task_recovery.find_queued_tasks()
+        
+        return {
+            'stuck_processing': stuck,
+            'stuck_queued': queued,
+            'total_stuck': len(stuck) + len(queued)
+        }
+    except Exception as e:
+        logger.error(f"Error getting stuck tasks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/recovery/reset-task/{identifier}")
+async def reset_single_task(identifier: str):
+    """Reset a single stuck task back to queued"""
+    try:
+        success = await task_recovery.reset_stuck_task(identifier)
+        if success:
+            return {'success': True, 'message': f'Task {identifier} reset to queued'}
+        else:
+            raise HTTPException(status_code=404, detail='Task not found or already reset')
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting task: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/recovery/reset-all-stuck")
+async def reset_all_stuck(timeout_minutes: int = Query(default=30)):
+    """Reset ALL stuck tasks back to queued state"""
+    try:
+        result = await task_recovery.reset_all_stuck_tasks(timeout_minutes)
+        return result
+    except Exception as e:
+        logger.error(f"Error resetting all stuck tasks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/recovery/mark-failed/{identifier}")
+async def mark_task_failed(identifier: str, error: str = Query(default="Manually marked as failed")):
+    """Mark a stuck task as failed"""
+    try:
+        success = await task_recovery.mark_task_failed(identifier, error)
+        if success:
+            return {'success': True, 'message': f'Task {identifier} marked as failed'}
+        else:
+            raise HTTPException(status_code=404, detail='Task not found')
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error marking task as failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/recovery/stats")
+async def get_recovery_stats():
+    """Get comprehensive task statistics including stuck tasks"""
+    try:
+        stats = await task_recovery.get_task_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting recovery stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 app.include_router(api_router)
 
 app.add_middleware(
