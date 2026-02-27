@@ -40,8 +40,9 @@ logger = logging.getLogger(__name__)
 
 # Initialize scraper components
 archive_scraper = ArchiveScraper(db)
-orchestrator = ProductionOrchestrator(db, max_workers=4)
+orchestrator = RobustOrchestrator(db, max_workers=6)
 face_processor = FaceProcessor(db)
+face_detector = get_detector()  # Initialize once globally
 
 class FaceEntry(BaseModel):
     model_config = ConfigDict(extra="ignore")
