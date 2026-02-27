@@ -371,13 +371,13 @@ async def start_batch_scraping(
 
 @api_router.post("/scraper/auto-discover")
 async def auto_discover_and_scrape(
-    query: str = Query(default=\"yearbook\"),
+    query: str = Query(default="yearbook"),
     year_start: int = Query(default=2000),
     year_end: int = Query(default=2015),
     limit: int = Query(default=100),
     max_pages_per_book: Optional[int] = Query(default=50)
 ):
-    \"\"\"Auto-discover yearbooks and start scraping all - FAST TRACK TO 1M FACES\"\"\"
+    """Auto-discover yearbooks and start scraping all - FAST TRACK TO 1M FACES"""
     try:
         # Search for yearbooks
         yearbooks = await archive_scraper.search_yearbooks(
@@ -401,7 +401,7 @@ async def auto_discover_and_scrape(
         }
         
     except Exception as e:
-        logger.error(f\"Error in auto-discover: {str(e)}\")
+        logger.error(f"Error in auto-discover: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/scraper/progress")
