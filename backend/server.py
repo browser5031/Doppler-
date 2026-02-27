@@ -293,11 +293,43 @@ async def get_yearbook_details(identifier: str):
         details = await archive_scraper.get_yearbook_details(identifier)
         if not details:
             raise HTTPException(status_code=404, detail="Yearbook not found")
+        
+        # Also check for available file formats
+        pdf_info = await archive_scraper.get_pdf_download_url(identifier)
+        details['available_format'] = pdf_info
+        
         return details
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting yearbook details: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/scraper/debug/{identifier}")
+async def debug_yearbook_files(identifier: str):
+    """Debug endpoint to see all available files for a yearbook"""
+    try:
+        import internetarchive as ia
+        item = ia.get_item(identifier)
+        
+        files = []
+        for f in item.files:
+            files.append({
+                'name': f['name'],
+                'format': f.get('format', 'unknown'),
+                'size': f.get('size', 0),
+            })
+        
+        return {
+            'identifier': identifier,
+            'total_files': len(files),
+            'files': files[:50],  # First 50 files
+            'has_pdf': any('.pdf' in f['name'] for f in files),
+            'has_djvu': any('.djvu' in f['name'] for f in files),
+            'formats': list(set(f.get('format', 'unknown') for f in item.files))
+        }
+    except Exception as e:
+        logger.error(f"Error debugging files: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/scraper/start")
