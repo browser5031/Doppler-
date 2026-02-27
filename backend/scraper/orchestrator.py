@@ -219,7 +219,7 @@ class ScraperOrchestrator:
             )
             
             # Extract images from PDF
-            logger.info(f"Extracting images from PDF ({total_pages} pages)\")
+            logger.info(f"Extracting images from PDF ({total_pages} pages)")
             images = self.pdf_processor.extract_images_from_pdf(pdf_path, page_limit=max_pages)
             
             # Process faces
@@ -232,11 +232,11 @@ class ScraperOrchestrator:
             return result
             
         except Exception as e:
-            logger.error(f"Error processing PDF yearbook: {str(e)}\")
+            logger.error(f"Error processing PDF yearbook: {str(e)}")
             return {'success': False, 'error': str(e)}
     
     async def process_image_yearbook(self, identifier: str, yearbook_data: Dict, options: Dict) -> Dict:
-        \"\"\"Process an image-based yearbook (JPEG collection)\"\"\"
+        """Process an image-based yearbook (JPEG collection)"""
         max_pages = options.get('max_pages', None)
         
         try:
@@ -246,7 +246,7 @@ class ScraperOrchestrator:
             )
             
             # Get list of images
-            logger.info(f"Fetching image list for {identifier}\")
+            logger.info(f"Fetching image list for {identifier}")
             image_urls = await self.archive_scraper.get_yearbook_images(identifier, max_images=max_pages)
             
             if not image_urls:
@@ -277,9 +277,9 @@ class ScraperOrchestrator:
                                     'height': img.height,
                                     'format': img.format
                                 })
-                                logger.info(f"Downloaded image {idx + 1}/{total_images}\")
+                                logger.info(f"Downloaded image {idx + 1}/{total_images}")
                 except Exception as e:
-                    logger.warning(f"Failed to download image {img_info['url']}: {str(e)}\")
+                    logger.warning(f"Failed to download image {img_info['url']}: {str(e)}")
                     continue
             
             # Process faces
@@ -287,13 +287,13 @@ class ScraperOrchestrator:
             return result
             
         except Exception as e:
-            logger.error(f"Error processing image yearbook: {str(e)}\")
+            logger.error(f"Error processing image yearbook: {str(e)}")
             return {'success': False, 'error': str(e)}
     
     async def process_images_for_faces(self, identifier: str, yearbook_data: Dict, images: List[Dict]) -> Dict:
-        \"\"\"Process images to detect and save faces\"\"\"
+        """Process images to detect and save faces"""
         try:
-            logger.info(f"Processing {len(images)} images for faces...\")
+            logger.info(f"Processing {len(images)} images for faces...")
             
             faces_found = 0
             pages_processed = set()
@@ -317,7 +317,7 @@ class ScraperOrchestrator:
                     # Prepare metadata
                     metadata = {
                         'yearbook_url': yearbook_data['archive_url'],
-                        'page_url': f"{yearbook_data['archive_url']}/page/{page_num}\",
+                        'page_url': f"{yearbook_data['archive_url']}/page/{page_num}",
                         'year': yearbook_data.get('year'),
                         'school': yearbook_data.get('title', ''),
                         'location': yearbook_data.get('publisher', '')
@@ -356,7 +356,7 @@ class ScraperOrchestrator:
                 }}
             )
             
-            logger.info(f"Completed processing {identifier}: {faces_found} faces from {len(pages_processed)} pages\")
+            logger.info(f"Completed processing {identifier}: {faces_found} faces from {len(pages_processed)} pages")
             
             return {
                 'success': True,
@@ -366,7 +366,7 @@ class ScraperOrchestrator:
             }
             
         except Exception as e:
-            logger.error(f"Error processing images for faces: {str(e)}\")
+            logger.error(f"Error processing images for faces: {str(e)}")
             return {'success': False, 'error': str(e)}
     
     async def process_job_queue(self):
