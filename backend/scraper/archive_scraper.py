@@ -166,15 +166,37 @@ class ArchiveScraper:
                     'filename': pdf_file
                 }
             
-            # Check for JP2 or image-based books
-            jp2_files = [f for f in item.files if f.get('format') == 'Single Page Processed JP2 ZIP']
-            if jp2_files:
-                logger.info(f"Found image-based book (JP2): {jp2_files[0]['name']}")
+            # Check for JPEG/JPG images (most common for older yearbooks)
+            jpeg_files = [f for f in item.files if f['name'].lower().endswith(('.jpg', '.jpeg'))]
+            if jpeg_files:
+                logger.info(f"Found image-based book with {len(jpeg_files)} JPEG files")
                 return {
                     'format': 'images',
                     'url': f"https://archive.org/download/{identifier}",
                     'filename': None,
-                    'message': 'Image-based book - requires special processing'
+                    'total_images': len(jpeg_files)
+                }
+            
+            # Check for JP2 or PNG images
+            image_files = [f for f in item.files if f['name'].lower().endswith(('.png', '.jp2'))]
+            if image_files:
+                logger.info(f"Found image-based book with {len(image_files)} image files")
+                return {
+                    'format': 'images',
+                    'url': f"https://archive.org/download/{identifier}",
+                    'filename': None,
+                    'total_images': len(image_files)
+                }
+            
+            # Check for JP2 ZIP archives
+            jp2_files = [f for f in item.files if f.get('format') == 'Single Page Processed JP2 ZIP']
+            if jp2_files:
+                logger.info(f"Found JP2 ZIP archive")
+                return {
+                    'format': 'images',
+                    'url': f"https://archive.org/download/{identifier}",
+                    'filename': None,
+                    'message': 'Image-based book (JP2 ZIP)'
                 }
             
             logger.warning(f"No compatible format found for {identifier}")
