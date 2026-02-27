@@ -73,20 +73,17 @@ class ComparisonResponse(BaseModel):
     results: List[SimilarityResult]
     processing_time: float
 
-def extract_face_embedding(image_bytes: bytes, model_name: str = "Facenet512") -> Optional[np.ndarray]:
+def extract_face_embedding(image_bytes: bytes) -> Optional[np.ndarray]:
+    """Extract face embedding using InsightFace - FAST"""
     try:
         img = Image.open(io.BytesIO(image_bytes))
-        img_array = np.array(img)
         
-        embedding_objs = DeepFace.represent(
-            img_path=img_array,
-            model_name=model_name,
-            enforce_detection=True,
-            detector_backend="opencv"
-        )
+        # Use global InsightFace detector
+        faces = face_detector.detect_faces(img)
         
-        if embedding_objs and len(embedding_objs) > 0:
-            return np.array(embedding_objs[0]["embedding"])
+        if faces and len(faces) > 0:
+            # Return first face embedding
+            return np.array(faces[0]["embedding"])
         return None
     except Exception as e:
         logger.error(f"Error extracting face embedding: {str(e)}")
