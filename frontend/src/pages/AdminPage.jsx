@@ -202,7 +202,7 @@ const AdminPage = () => {
               <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'Unbounded, sans-serif' }}>
                 Search Archive.org Yearbooks
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -224,20 +224,32 @@ const AdminPage = () => {
                   placeholder="End year"
                   className="bg-white/5 border-white/10 text-white"
                 />
+                <Input
+                  type="number"
+                  value={defaultPageLimit || ''}
+                  onChange={(e) => setDefaultPageLimit(e.target.value ? parseInt(e.target.value) : null)}
+                  placeholder="All pages"
+                  className="bg-white/5 border-white/10 text-white"
+                />
               </div>
-              <Button
-                onClick={handleSearch}
-                disabled={searching}
-                className="bg-[#00FF94] text-black hover:bg-[#00CC76] font-bold"
-                data-testid="search-button"
-              >
-                {searching ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Search className="w-4 h-4 mr-2" />
-                )}
-                Search
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={handleSearch}
+                  disabled={searching}
+                  className="bg-[#00FF94] text-black hover:bg-[#00CC76] font-bold"
+                  data-testid="search-button"
+                >
+                  {searching ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4 mr-2" />
+                  )}
+                  Search
+                </Button>
+                <span className="text-sm text-[#A1A1AA]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  Page limit: {defaultPageLimit ? `${defaultPageLimit} pages` : 'All pages'}
+                </span>
+              </div>
             </div>
 
             {/* Search Results */}
