@@ -434,20 +434,21 @@ async def get_scraping_jobs(
 async def get_scraper_status():
     """Get current scraper status"""
     try:
-        total_jobs = await db.scraping_jobs.count_documents({})
-        queued = await db.scraping_jobs.count_documents({'status': 'queued'})
-        processing = await db.scraping_jobs.count_documents({'status': 'processing'})
-        completed = await db.scraping_jobs.count_documents({'status': 'completed'})
-        failed = await db.scraping_jobs.count_documents({'status': 'failed'})
+        total_yearbooks = await db.yearbooks.count_documents({})
+        total_faces = await db.faces.count_documents({})
+        processing = await db.yearbooks.count_documents({'scraping_status': 'processing'})
+        completed = await db.yearbooks.count_documents({'scraping_status': 'completed'})
+        failed = await db.yearbooks.count_documents({'scraping_status': 'failed'})
+        queued = await db.yearbooks.count_documents({'scraping_status': 'queued'})
         
         return {
-            "is_running": orchestrator.is_running,
-            "current_job": orchestrator.current_job,
-            "total_jobs": total_jobs,
-            "queued": queued,
+            "total_yearbooks": total_yearbooks,
+            "total_faces": total_faces,
             "processing": processing,
             "completed": completed,
-            "failed": failed
+            "failed": failed,
+            "queued": queued,
+            "current_jobs": list(orchestrator.current_jobs.keys())
         }
     except Exception as e:
         logger.error(f"Error getting scraper status: {str(e)}")
