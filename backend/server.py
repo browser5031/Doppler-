@@ -11,7 +11,6 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
 import numpy as np
-from deepface import DeepFace
 from PIL import Image
 import io
 import base64
@@ -19,8 +18,9 @@ import traceback
 from sklearn.metrics.pairwise import cosine_similarity
 import asyncio
 from scraper.archive_scraper import ArchiveScraper
-from scraper.production_orchestrator import ProductionOrchestrator
+from scraper.robust_orchestrator import RobustOrchestrator
 from scraper.face_processor import FaceProcessor
+from scraper.fast_face_detector import get_detector
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
