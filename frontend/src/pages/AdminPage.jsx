@@ -274,7 +274,7 @@ const AdminPage = () => {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 ml-4">
                       <a
                         href={`https://archive.org/details/${result.identifier}`}
                         target="_blank"
@@ -284,13 +284,13 @@ const AdminPage = () => {
                         <ExternalLink className="w-4 h-4" />
                       </a>
                       <Button
-                        onClick={() => startScraping(result.identifier, 10)}
+                        onClick={() => startScraping(result.identifier, defaultPageLimit)}
                         size="sm"
-                        className="bg-[#00FF94] text-black hover:bg-[#00CC76]"
+                        className="bg-[#00FF94] text-black hover:bg-[#00CC76] whitespace-nowrap"
                         data-testid={`scrape-button-${index}`}
                       >
                         <Play className="w-4 h-4 mr-1" />
-                        Scrape (10 pages)
+                        {defaultPageLimit ? `Scrape (${defaultPageLimit} pages)` : 'Scrape All'}
                       </Button>
                     </div>
                   </div>
