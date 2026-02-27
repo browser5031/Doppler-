@@ -68,11 +68,17 @@ class ScraperOrchestrator:
                 return await self.process_pdf_yearbook(identifier, yearbook_data, download_info, options)
                 
         except Exception as e:
-            logger.error(f"Error processing yearbook {identifier}: {str(e)}\")
+            logger.error(f"Error processing yearbook {identifier}: {str(e)}")
             
-            # Download PDF
-            pdf_path = f"/tmp/yearbook_processing/{identifier}.pdf"
-            logger.info(f"Downloading PDF from {pdf_url}")
+            await self.db.yearbooks.update_one(
+                {'identifier': identifier},
+                {'$set': {
+                    'scraping_status': 'error',
+                    'error': str(e)
+                }}
+            )
+            
+            return {'success': False, 'error': str(e)}
             
             download_success = await self.pdf_processor.download_pdf(pdf_url, pdf_path)
             if not download_success:
