@@ -19,7 +19,7 @@ import traceback
 from sklearn.metrics.pairwise import cosine_similarity
 import asyncio
 from scraper.archive_scraper import ArchiveScraper
-from scraper.orchestrator import ScraperOrchestrator
+from scraper.production_orchestrator import ProductionOrchestrator
 from scraper.face_processor import FaceProcessor
 
 ROOT_DIR = Path(__file__).parent
