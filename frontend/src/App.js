@@ -3,6 +3,8 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "@/pages/HomePage";
 import ResultsPage from "@/pages/ResultsPage";
+import AdminPage from "@/pages/AdminPage";
+import YearbookDetailPage from "@/pages/YearbookDetailPage";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -12,6 +14,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/results" element={<ResultsPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/yearbook/:identifier" element={<YearbookDetailPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
