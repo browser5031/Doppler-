@@ -215,11 +215,12 @@ class ArchiveScraper:
             import internetarchive as ia
             item = ia.get_item(identifier)
             
-            # Find all JPEG/JPG files
+            # Find all JPEG/JPG/PNG files (exclude thumbnails)
             image_files = [
                 f for f in item.files 
                 if f['name'].lower().endswith(('.jpg', '.jpeg', '.png'))
-                and not f['name'].startswith('__')  # Skip thumbnails
+                and '_thumb' not in f['name'].lower()
+                and not f['name'].startswith('__')
             ]
             
             # Sort by name to maintain order
@@ -230,8 +231,11 @@ class ArchiveScraper:
             
             images = []
             for img_file in image_files:
+                # URL encode the filename for proper download
+                from urllib.parse import quote
+                encoded_name = quote(img_file['name'])
                 images.append({
-                    'url': f"https://archive.org/download/{identifier}/{img_file['name']}",
+                    'url': f"https://archive.org/download/{identifier}/{encoded_name}",
                     'filename': img_file['name'],
                     'size': img_file.get('size', 0)
                 })
