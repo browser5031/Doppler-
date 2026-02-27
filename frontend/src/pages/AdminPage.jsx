@@ -32,6 +32,7 @@ const AdminPage = () => {
   const [jobs, setJobs] = useState([]);
   const [yearbooks, setYearbooks] = useState([]);
   const [activeTab, setActiveTab] = useState("search");
+  const [defaultPageLimit, setDefaultPageLimit] = useState(null); // null = all pages
 
   useEffect(() => {
     fetchScrapingStatus();
