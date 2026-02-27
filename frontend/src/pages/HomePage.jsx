@@ -109,14 +109,24 @@ const HomePage = () => {
                 Archive Face Recognition System
               </p>
             </div>
-            {stats && (
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
-                <Database className="w-4 h-4 text-[#00FF94]" />
-                <span className="text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                  {stats.total_faces.toLocaleString()} faces indexed
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-4">
+              {stats && (
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
+                  <Database className="w-4 h-4 text-[#00FF94]" />
+                  <span className="text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                    {stats.total_faces.toLocaleString()} faces indexed
+                  </span>
+                </div>
+              )}
+              <Button
+                onClick={() => navigate('/admin')}
+                variant="ghost"
+                className="text-white hover:text-[#00FF94] hover:bg-white/10"
+                data-testid="admin-button"
+              >
+                Admin
+              </Button>
+            </div>
           </div>
         </div>
       </header>
