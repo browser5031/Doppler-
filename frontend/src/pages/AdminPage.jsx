@@ -288,6 +288,24 @@ const AdminPage = () => {
                   )}
                   Search
                 </Button>
+                {searchResults.length > 0 && (
+                  <Button
+                    onClick={startBulkScraping}
+                    className="bg-[#6366F1] text-white hover:bg-[#5558E3] font-bold"
+                    data-testid="bulk-scrape-button"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Scrape All {searchResults.length} Results
+                  </Button>
+                )}
+                <Button
+                  onClick={autoDiscover}
+                  variant="outline"
+                  className="border-[#00FF94] text-[#00FF94] hover:bg-[#00FF94] hover:text-black font-bold"
+                  data-testid="auto-discover-button"
+                >
+                  🚀 Auto-Discover & Scrape 200
+                </Button>
                 <span className="text-sm text-[#A1A1AA]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                   Page limit: {defaultPageLimit ? `${defaultPageLimit} pages` : 'All pages'}
                 </span>
