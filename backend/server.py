@@ -404,30 +404,35 @@ async def auto_discover_and_scrape(
         logger.error(f\"Error in auto-discover: {str(e)}\")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/scraper/jobs")
-async def get_scraping_jobs(
+@api_router.get("/scraper/progress")
+async def get_scraping_progress(
     status: Optional[str] = Query(default=None),
     skip: int = Query(default=0),
     limit: int = Query(default=20)
 ):
-    """Get list of scraping jobs"""
+    """Get yearbook scraping progress"""
     try:
         query = {}
         if status:
-            query['status'] = status
+            query['scraping_status'] = status
         
-        cursor = db.scraping_jobs.find(query, {'_id': 0}).skip(skip).limit(limit).sort('created_at', -1)
-        jobs = await cursor.to_list(length=limit)
-        total = await db.scraping_jobs.count_documents(query)
+        cursor = db.yearbooks.find(
+            query,
+            {'_id': 0, 'identifier': 1, 'title': 1, 'year': 1, 'scraping_status': 1, 
+             'faces_extracted': 1, 'pages_processed': 1, 'total_pages': 1, 'error': 1}
+        ).skip(skip).limit(limit).sort('updated_at', -1)
+        
+        yearbooks = await cursor.to_list(length=limit)
+        total = await db.yearbooks.count_documents(query)
         
         return {
-            "jobs": jobs,
+            "yearbooks": yearbooks,
             "total": total,
             "skip": skip,
             "limit": limit
         }
     except Exception as e:
-        logger.error(f"Error getting jobs: {str(e)}")
+        logger.error(f"Error getting progress: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/scraper/status")
