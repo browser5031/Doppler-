@@ -1,0 +1,106 @@
+{
+  "theme_strategy": {
+    "mode": "dark",
+    "style_archetype": "Retro-Futurism / The Archive Scanner",
+    "emotional_goal": "Mystery, Precision, Discovery",
+    "description": "A high-tech interface for exploring lost history. Think 'Minority Report' meets 'Public Library'. Dark, immersive backgrounds with electric highlights to signal discovery."
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Unbounded",
+      "weights": ["400", "700"],
+      "usage": "Hero titles, Section headers, Similarity percentages",
+      "fallback": "sans-serif",
+      "cdn_import": "https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&display=swap"
+    },
+    "body": {
+      "font_family": "Inter",
+      "weights": ["300", "400", "500"],
+      "usage": "Descriptions, Metadata, UI labels",
+      "fallback": "sans-serif",
+      "cdn_import": "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+    },
+    "monospace": {
+      "font_family": "JetBrains Mono",
+      "usage": "Data coordinates, Year numbers, Loading states",
+      "cdn_import": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap"
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "#050505",
+      "paper": "#0A0A0A",
+      "subtle": "#121212"
+    },
+    "primary": {
+      "main": "#00FF94",
+      "hover": "#00CC76",
+      "glow": "0 0 20px rgba(0, 255, 148, 0.4)"
+    },
+    "secondary": {
+      "main": "#6366F1",
+      "faint": "rgba(99, 102, 241, 0.1)"
+    },
+    "text": {
+      "primary": "#EDEDED",
+      "secondary": "#A1A1AA",
+      "muted": "#52525B"
+    },
+    "status": {
+      "success": "#00FF94",
+      "scanning": "#3B82F6",
+      "error": "#EF4444"
+    }
+  },
+  "layout_strategies": {
+    "grid_system": "Bento Grid (Mode A)",
+    "container_padding": {
+      "mobile": "p-6",
+      "desktop": "p-12"
+    },
+    "spacing_scale": "Relaxed (2x standard)",
+    "rules": [
+      "Never use pure black (#000000) for cards.",
+      "Always add 1px border to cards with 10% opacity.",
+      "Use 'subgrid' for alignment within cards if possible."
+    ]
+  },
+  "component_styles": {
+    "buttons": {
+      "primary": "bg-primary text-black font-bold uppercase tracking-wide hover:shadow-[0_0_20px_rgba(0,255,148,0.5)] transition-all",
+      "secondary": "border border-white/20 text-white hover:bg-white/10 backdrop-blur-md"
+    },
+    "cards": {
+      "result_card": "bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl hover:border-primary/50 transition-colors group relative overflow-hidden",
+      "metadata_panel": "bg-black/80 border-l border-white/10"
+    },
+    "inputs": {
+      "search_bar": "bg-white/5 border border-white/10 focus:border-primary text-white placeholder-white/30 rounded-full px-6 py-4 text-lg"
+    }
+  },
+  "motion_guidelines": {
+    "scanning_effect": "A horizontal line moving top-to-bottom over images (scanline).",
+    "hover_states": "Instant color shift, slow glow decay.",
+    "page_transitions": "Fade up with slight scale (0.98 -> 1.00)."
+  },
+  "image_assets": {
+    "hero_demo_face": "https://images.unsplash.com/photo-1758518731009-66fc99eb20e7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBzZWxmaWUlMjBwb3J0cmFpdCUyMHdvbWFufGVufDB8fHx8MTc3MjE3MDMyMnww&ixlib=rb-4.1.0&q=85",
+    "vintage_match_1": "https://images.unsplash.com/photo-1728585255188-6c8de5aeb275?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwzfHx2aW50YWdlJTIweWVhcmJvb2slMjBzdHVkZW50JTIwcG9ydHJhaXQlMjBibGFjayUyMGFuZCUyMHdoaXRlfGVufDB8fHx8MTc3MjE3MDMyMXww&ixlib=rb-4.1.0&q=85",
+    "vintage_match_2": "https://images.unsplash.com/photo-1542850083-aff0f80c1646?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwxfHx2aW50YWdlJTIweWVhcmJvb2slMjBzdHVkZW50JTIwcG9ydHJhaXQlMjBibGFjayUyMGFuZCUyMHdoaXRlfGVufDB8fHx8MTc3MjE3MDMyMXww&ixlib=rb-4.1.0&q=85",
+    "abstract_scanner_bg": "https://images.unsplash.com/photo-1764549906172-0153db0825bc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGN5YmVyJTIwZGlnaXRhbCUyMGZhY2UlMjBzY2FuJTIwbmV0d29ya3xlbnwwfHx8fDE3NzIxNzAzMjN8MA&ixlib=rb-4.1.0&q=85"
+  },
+  "instructions_to_main_agent": [
+    "1. SETUP: Install fonts 'Unbounded' and 'Inter' in index.html immediately.",
+    "2. THEME: Force dark mode in tailwind config. Do not allow light mode toggle for MVP.",
+    "3. COMPONENT: Create a 'ScannerFrame' component that adds a moving green line over any child image.",
+    "4. LAYOUT: The Results Gallery must use a Masonry or Bento layout, not a simple grid. Faces vary in aspect ratio.",
+    "5. INTERACTION: When a user uploads a photo, show a 'biometric analysis' animation before fetching results.",
+    "6. ACCESSIBILITY: Ensure the Green (#00FF94) text is only used on very dark backgrounds. Use White for body text."
+  ],
+  "universal_guidelines": [
+    "Do not use gradients for backgrounds, use solid dark colors + noise texture.",
+    "Add 'data-testid' to all interactive elements.",
+    "Use 'sonner' for all notifications.",
+    "Avoid standard card shadows; use 1px borders instead."
+  ]
+}
