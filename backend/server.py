@@ -131,7 +131,7 @@ async def upload_and_compare(
                 similarities.append({
                     "face_id": face["face_id"],
                     "name": face.get("name"),
-                    "year": face.get("year"),
+                    "year": int(face.get("year")) if face.get("year") and str(face.get("year")).isdigit() else None,
                     "school": face.get("school"),
                     "yearbook_url": face["yearbook_url"],
                     "page_url": face["page_url"],
