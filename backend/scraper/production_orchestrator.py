@@ -191,13 +191,17 @@ class ProductionOrchestrator:
                                     'width': img.width,
                                     'height': img.height
                                 }
+                            else:
+                                logger.warning(f"Failed to download {img_info['url']}: HTTP {response.status}")
                 except Exception as e:
                     logger.warning(f"Failed to download {img_info['url']}: {str(e)}")
                 return None
         
         tasks = [download_one(img_info, idx) for idx, img_info in enumerate(image_urls)]
         results = await asyncio.gather(*tasks)
-        return [r for r in results if r is not None]
+        successful = [r for r in results if r is not None]
+        logger.info(f"Successfully downloaded {len(successful)}/{len(image_urls)} images")
+        return successful
     
     async def process_images_parallel(self, identifier: str, yearbook_data: Dict, images: List[Dict]) -> Dict:
         """Process images for faces in parallel - MAXIMUM SPEED"""
