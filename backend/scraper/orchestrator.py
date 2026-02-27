@@ -200,7 +200,7 @@ class ScraperOrchestrator:
         try:
             # Download PDF
             pdf_path = f"/tmp/yearbook_processing/{identifier}.pdf"
-            logger.info(f"Downloading PDF from {pdf_url}\")
+            logger.info(f"Downloading PDF from {pdf_url}")
             
             download_success = await self.pdf_processor.download_pdf(pdf_url, pdf_path)
             if not download_success:
