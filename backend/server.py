@@ -244,6 +244,7 @@ async def seed_database():
 async def get_stats():
     try:
         total_faces = await db.faces.count_documents({})
+        total_yearbooks = await db.yearbooks.count_documents({})
         
         pipeline = [
             {"$group": {
@@ -256,10 +257,235 @@ async def get_stats():
         
         return {
             "total_faces": total_faces,
+            "total_yearbooks": total_yearbooks,
             "by_year": years
         }
     except Exception as e:
         logger.error(f"Error getting stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============== SCRAPER ENDPOINTS ==============
+
+@api_router.get("/scraper/search-yearbooks")
+async def search_yearbooks(
+    query: str = Query(default="yearbook", description="Search query"),
+    year_start: int = Query(default=2000, description="Start year"),
+    year_end: int = Query(default=2015, description="End year"),
+    limit: int = Query(default=50, ge=1, le=200)
+):
+    """Search for yearbooks on archive.org"""
+    try:
+        results = await archive_scraper.search_yearbooks(
+            query=query,
+            year_start=year_start,
+            year_end=year_end,
+            limit=limit
+        )
+        return {"results": results, "count": len(results)}
+    except Exception as e:
+        logger.error(f"Error searching yearbooks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/scraper/yearbook/{identifier}")
+async def get_yearbook_details(identifier: str):
+    """Get detailed information about a specific yearbook"""
+    try:
+        details = await archive_scraper.get_yearbook_details(identifier)
+        if not details:
+            raise HTTPException(status_code=404, detail="Yearbook not found")
+        return details
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting yearbook details: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/scraper/start")
+async def start_scraping(
+    background_tasks: BackgroundTasks,
+    identifier: str = Query(..., description="Archive.org identifier"),
+    max_pages: Optional[int] = Query(default=None, description="Limit pages to process"),
+    priority: int = Query(default=5, ge=1, le=10)
+):
+    """Start scraping a yearbook"""
+    try:
+        # Create scraping job
+        job_id = await archive_scraper.create_scraping_job(
+            identifier=identifier,
+            priority=priority,
+            options={'max_pages': max_pages}
+        )
+        
+        if not job_id:
+            raise HTTPException(status_code=500, detail="Failed to create scraping job")
+        
+        # Start background task if not running
+        global scraping_task
+        if scraping_task is None or scraping_task.done():
+            scraping_task = asyncio.create_task(orchestrator.process_job_queue())
+        
+        return {
+            "message": "Scraping job created",
+            "job_id": job_id,
+            "identifier": identifier
+        }
+        
+    except Exception as e:
+        logger.error(f"Error starting scraping: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/scraper/batch-start")
+async def start_batch_scraping(
+    background_tasks: BackgroundTasks,
+    identifiers: List[str],
+    max_pages: Optional[int] = Query(default=None)
+):
+    """Start scraping multiple yearbooks"""
+    try:
+        job_ids = []
+        for identifier in identifiers:
+            job_id = await archive_scraper.create_scraping_job(
+                identifier=identifier,
+                priority=5,
+                options={'max_pages': max_pages}
+            )
+            if job_id:
+                job_ids.append(job_id)
+        
+        # Start background task if not running
+        global scraping_task
+        if scraping_task is None or scraping_task.done():
+            scraping_task = asyncio.create_task(orchestrator.process_job_queue())
+        
+        return {
+            "message": f"Created {len(job_ids)} scraping jobs",
+            "job_ids": job_ids
+        }
+        
+    except Exception as e:
+        logger.error(f"Error starting batch scraping: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/scraper/jobs")
+async def get_scraping_jobs(
+    status: Optional[str] = Query(default=None),
+    skip: int = Query(default=0),
+    limit: int = Query(default=20)
+):
+    """Get list of scraping jobs"""
+    try:
+        query = {}
+        if status:
+            query['status'] = status
+        
+        cursor = db.scraping_jobs.find(query, {'_id': 0}).skip(skip).limit(limit).sort('created_at', -1)
+        jobs = await cursor.to_list(length=limit)
+        total = await db.scraping_jobs.count_documents(query)
+        
+        return {
+            "jobs": jobs,
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        }
+    except Exception as e:
+        logger.error(f"Error getting jobs: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/scraper/status")
+async def get_scraper_status():
+    """Get current scraper status"""
+    try:
+        total_jobs = await db.scraping_jobs.count_documents({})
+        queued = await db.scraping_jobs.count_documents({'status': 'queued'})
+        processing = await db.scraping_jobs.count_documents({'status': 'processing'})
+        completed = await db.scraping_jobs.count_documents({'status': 'completed'})
+        failed = await db.scraping_jobs.count_documents({'status': 'failed'})
+        
+        return {
+            "is_running": orchestrator.is_running,
+            "current_job": orchestrator.current_job,
+            "total_jobs": total_jobs,
+            "queued": queued,
+            "processing": processing,
+            "completed": completed,
+            "failed": failed
+        }
+    except Exception as e:
+        logger.error(f"Error getting scraper status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/yearbooks")
+async def get_yearbooks(
+    skip: int = Query(default=0),
+    limit: int = Query(default=20),
+    status: Optional[str] = Query(default=None)
+):
+    """Get list of yearbooks in database"""
+    try:
+        query = {}
+        if status:
+            query['scraping_status'] = status
+        
+        cursor = db.yearbooks.find(query, {'_id': 0}).skip(skip).limit(limit).sort('created_at', -1)
+        yearbooks = await cursor.to_list(length=limit)
+        total = await db.yearbooks.count_documents(query)
+        
+        return {
+            "yearbooks": yearbooks,
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        }
+    except Exception as e:
+        logger.error(f"Error getting yearbooks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/yearbooks/{identifier}/faces")
+async def get_yearbook_faces(
+    identifier: str,
+    skip: int = Query(default=0),
+    limit: int = Query(default=50)
+):
+    """Get faces from a specific yearbook"""
+    try:
+        faces = await face_processor.get_faces_by_yearbook(identifier, skip, limit)
+        total = await db.faces.count_documents({'yearbook_id': identifier})
+        
+        return {
+            "faces": faces,
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        }
+    except Exception as e:
+        logger.error(f"Error getting yearbook faces: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/faces/search")
+async def search_all_faces(
+    year_start: Optional[int] = Query(default=None),
+    year_end: Optional[int] = Query(default=None),
+    school: Optional[str] = Query(default=None),
+    location: Optional[str] = Query(default=None),
+    yearbook_id: Optional[str] = Query(default=None),
+    skip: int = Query(default=0),
+    limit: int = Query(default=50)
+):
+    """Search faces with filters"""
+    try:
+        result = await face_processor.search_faces(
+            year_start=year_start,
+            year_end=year_end,
+            school=school,
+            location=location,
+            yearbook_id=yearbook_id,
+            skip=skip,
+            limit=limit
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error searching faces: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 app.include_router(api_router)
