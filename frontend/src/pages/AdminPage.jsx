@@ -33,6 +33,8 @@ const AdminPage = () => {
   const [yearbooks, setYearbooks] = useState([]);
   const [activeTab, setActiveTab] = useState("search");
   const [defaultPageLimit, setDefaultPageLimit] = useState(null); // null = all pages
+  const [stuckTasks, setStuckTasks] = useState({ stuck_processing: [], stuck_queued: [], total_stuck: 0 });
+  const [recoveryStats, setRecoveryStats] = useState({});
 
   useEffect(() => {
     fetchScrapingStatus();
