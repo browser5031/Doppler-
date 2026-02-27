@@ -44,6 +44,7 @@ archive_scraper = ArchiveScraper(db)
 orchestrator = RobustOrchestrator(db, max_workers=6)
 face_processor = FaceProcessor(db)
 face_detector = get_detector()  # Initialize once globally
+task_recovery = TaskRecovery(db)  # Task recovery system
 
 class FaceEntry(BaseModel):
     model_config = ConfigDict(extra="ignore")
