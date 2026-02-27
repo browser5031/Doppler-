@@ -42,10 +42,10 @@ class ScraperOrchestrator:
                 {'$set': {'scraping_status': 'downloading'}}
             )
             
-            # Get PDF download URL
-            pdf_info = await self.archive_scraper.get_pdf_download_url(identifier)
-            if not pdf_info:
-                error_msg = 'No compatible format found (PDF, DJVU, or images)'
+            # Get download info
+            download_info = await self.archive_scraper.get_pdf_download_url(identifier)
+            if not download_info:
+                error_msg = 'No compatible format found'
                 await self.db.yearbooks.update_one(
                     {'identifier': identifier},
                     {'$set': {'scraping_status': 'error', 'error': error_msg}}
@@ -53,18 +53,19 @@ class ScraperOrchestrator:
                 logger.error(f"No compatible format for {identifier}")
                 return {'success': False, 'error': error_msg}
             
-            # Check if it's an image-based book
-            if pdf_info.get('format') == 'images':
-                error_msg = 'Image-based books not yet supported - needs special processing'
-                await self.db.yearbooks.update_one(
-                    {'identifier': identifier},
-                    {'$set': {'scraping_status': 'error', 'error': error_msg}}
-                )
-                return {'success': False, 'error': error_msg}
+            file_format = download_info['format']
+            logger.info(f"Processing {identifier} - Format: {file_format}")
             
-            pdf_url = pdf_info['url']
-            pdf_format = pdf_info['format']
-            logger.info(f"Processing {identifier} - Format: {pdf_format}, URL: {pdf_url}")
+            # Handle different formats
+            if file_format == 'images':
+                # Image-based yearbook - process images directly
+                return await self.process_image_yearbook(identifier, yearbook_data, options)
+            else:
+                # PDF or DJVU - download and process
+                return await self.process_pdf_yearbook(identifier, yearbook_data, download_info, options)
+                
+        except Exception as e:
+            logger.error(f"Error processing yearbook {identifier}: {str(e)}\")
             
             # Download PDF
             pdf_path = f"/tmp/yearbook_processing/{identifier}.pdf"
