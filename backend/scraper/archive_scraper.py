@@ -185,10 +185,41 @@ class ArchiveScraper:
             logger.error(f"Error getting download URL for {identifier}: {str(e)}")
             return None
     
-    async def create_scraping_job(self, 
-                                 identifier: str,
-                                 priority: int = 5,
-                                 options: Dict = None) -> str:
+    async def get_yearbook_images(self, identifier: str, max_images: int = None) -> List[Dict]:
+        """
+        Get list of image URLs from an image-based yearbook
+        """
+        try:
+            import internetarchive as ia
+            item = ia.get_item(identifier)
+            
+            # Find all JPEG/JPG files
+            image_files = [
+                f for f in item.files 
+                if f['name'].lower().endswith(('.jpg', '.jpeg', '.png'))
+                and not f['name'].startswith('__')  # Skip thumbnails
+            ]
+            
+            # Sort by name to maintain order
+            image_files.sort(key=lambda x: x['name'])
+            
+            if max_images:
+                image_files = image_files[:max_images]
+            
+            images = []
+            for img_file in image_files:
+                images.append({
+                    'url': f"https://archive.org/download/{identifier}/{img_file['name']}",
+                    'filename': img_file['name'],
+                    'size': img_file.get('size', 0)
+                })
+            
+            logger.info(f"Found {len(images)} image files for {identifier}")
+            return images
+            
+        except Exception as e:
+            logger.error(f"Error getting yearbook images: {str(e)}")
+            return []
         """
         Create a scraping job for a yearbook
         """
