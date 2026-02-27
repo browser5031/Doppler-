@@ -5,7 +5,6 @@ from typing import List, Dict, Tuple, Optional
 import fitz  # PyMuPDF
 from PIL import Image
 import numpy as np
-from deepface import DeepFace
 import asyncio
 import aiohttp
 
