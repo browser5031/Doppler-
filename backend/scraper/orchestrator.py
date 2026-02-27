@@ -183,6 +183,183 @@ class ScraperOrchestrator:
             
             return {'success': False, 'error': str(e)}
     
+    async def process_pdf_yearbook(self, identifier: str, yearbook_data: Dict, download_info: Dict, options: Dict) -> Dict:
+        """Process a PDF-based yearbook"""
+        max_pages = options.get('max_pages', None)
+        pdf_url = download_info['url']
+        
+        try:
+            # Download PDF
+            pdf_path = f\"/tmp/yearbook_processing/{identifier}.pdf\"
+            logger.info(f\"Downloading PDF from {pdf_url}\")
+            
+            download_success = await self.pdf_processor.download_pdf(pdf_url, pdf_path)
+            if not download_success:
+                return {'success': False, 'error': 'Failed to download PDF'}
+            
+            # Get PDF info
+            pdf_info = self.pdf_processor.get_pdf_info(pdf_path)
+            total_pages = pdf_info.get('num_pages', 0)
+            
+            await self.db.yearbooks.update_one(
+                {'identifier': identifier},
+                {'$set': {
+                    'scraping_status': 'processing',
+                    'total_pages': total_pages
+                }}
+            )
+            
+            # Extract images from PDF
+            logger.info(f\"Extracting images from PDF ({total_pages} pages)\")
+            images = self.pdf_processor.extract_images_from_pdf(pdf_path, page_limit=max_pages)
+            
+            # Process faces
+            result = await self.process_images_for_faces(identifier, yearbook_data, images)
+            
+            # Clean up
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f\"Error processing PDF yearbook: {str(e)}\")
+            return {'success': False, 'error': str(e)}
+    
+    async def process_image_yearbook(self, identifier: str, yearbook_data: Dict, options: Dict) -> Dict:
+        \"\"\"Process an image-based yearbook (JPEG collection)\"\"\"
+        max_pages = options.get('max_pages', None)
+        
+        try:
+            await self.db.yearbooks.update_one(
+                {'identifier': identifier},
+                {'$set': {'scraping_status': 'processing'}}
+            )
+            
+            # Get list of images
+            logger.info(f\"Fetching image list for {identifier}\")
+            image_urls = await self.archive_scraper.get_yearbook_images(identifier, max_images=max_pages)
+            
+            if not image_urls:
+                return {'success': False, 'error': 'No images found'}
+            
+            total_images = len(image_urls)
+            await self.db.yearbooks.update_one(
+                {'identifier': identifier},
+                {'$set': {'total_pages': total_images}}
+            )
+            
+            # Download and process each image
+            images_data = []
+            for idx, img_info in enumerate(image_urls):
+                try:
+                    # Download image
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(img_info['url'], timeout=aiohttp.ClientTimeout(total=30)) as response:
+                            if response.status == 200:
+                                img_bytes = await response.read()
+                                img = Image.open(io.BytesIO(img_bytes))
+                                
+                                images_data.append({
+                                    'page_num': idx + 1,
+                                    'image_index': 0,
+                                    'image': img,
+                                    'width': img.width,
+                                    'height': img.height,
+                                    'format': img.format
+                                })
+                                logger.info(f\"Downloaded image {idx + 1}/{total_images}\")
+                except Exception as e:
+                    logger.warning(f\"Failed to download image {img_info['url']}: {str(e)}\")
+                    continue
+            
+            # Process faces
+            result = await self.process_images_for_faces(identifier, yearbook_data, images_data)
+            return result
+            
+        except Exception as e:
+            logger.error(f\"Error processing image yearbook: {str(e)}\")
+            return {'success': False, 'error': str(e)}
+    
+    async def process_images_for_faces(self, identifier: str, yearbook_data: Dict, images: List[Dict]) -> Dict:
+        \"\"\"Process images to detect and save faces\"\"\"
+        try:
+            logger.info(f\"Processing {len(images)} images for faces...\")
+            
+            faces_found = 0
+            pages_processed = set()
+            
+            # Process each image
+            for img_data in images:
+                page_num = img_data['page_num']
+                pages_processed.add(page_num)
+                
+                # Detect faces
+                faces = self.pdf_processor.detect_faces_in_image(img_data['image'])
+                
+                # Save each face
+                for face in faces:
+                    # Extract face thumbnail
+                    thumbnail = self.pdf_processor.extract_face_thumbnail(
+                        img_data['image'],
+                        face
+                    )
+                    
+                    # Prepare metadata
+                    metadata = {
+                        'yearbook_url': yearbook_data['archive_url'],
+                        'page_url': f\"{yearbook_data['archive_url']}/page/{page_num}\",
+                        'year': yearbook_data.get('year'),
+                        'school': yearbook_data.get('title', ''),
+                        'location': yearbook_data.get('publisher', '')
+                    }
+                    
+                    # Save to database
+                    face_id = await self.face_processor.save_face(
+                        embedding=face['embedding'],
+                        yearbook_id=identifier,
+                        page_num=page_num,
+                        face_thumbnail=thumbnail,
+                        metadata=metadata
+                    )
+                    
+                    if face_id:
+                        faces_found += 1
+                
+                # Update progress every 10 pages
+                if len(pages_processed) % 10 == 0:
+                    await self.db.yearbooks.update_one(
+                        {'identifier': identifier},
+                        {'$set': {
+                            'pages_processed': len(pages_processed),
+                            'faces_extracted': faces_found
+                        }}
+                    )
+            
+            # Update final status
+            await self.db.yearbooks.update_one(
+                {'identifier': identifier},
+                {'$set': {
+                    'scraping_status': 'completed',
+                    'completed_at': datetime.now(timezone.utc).isoformat(),
+                    'faces_extracted': faces_found,
+                    'pages_processed': len(pages_processed)
+                }}
+            )
+            
+            logger.info(f\"Completed processing {identifier}: {faces_found} faces from {len(pages_processed)} pages\")
+            
+            return {
+                'success': True,
+                'faces_found': faces_found,
+                'pages_processed': len(pages_processed),
+                'total_pages': len(images)
+            }
+            
+        except Exception as e:
+            logger.error(f\"Error processing images for faces: {str(e)}\")
+            return {'success': False, 'error': str(e)}
+    
     async def process_job_queue(self):
         """
         Process scraping jobs from queue
