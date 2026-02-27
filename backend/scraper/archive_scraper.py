@@ -121,22 +121,68 @@ class ArchiveScraper:
             logger.error(f"Error saving yearbook to DB: {str(e)}")
             return None
     
-    async def get_pdf_download_url(self, identifier: str) -> Optional[str]:
+    async def get_pdf_download_url(self, identifier: str) -> Optional[Dict]:
         """
-        Get direct download URL for yearbook PDF
+        Get direct download URL for yearbook PDF or other formats
+        Returns dict with format type and URL
         """
         try:
             item = ia.get_item(identifier)
-            pdf_files = [f for f in item.files if f['name'].endswith('.pdf')]
             
+            # List all available files for debugging
+            all_files = [(f['name'], f.get('format', 'unknown')) for f in item.files]
+            logger.info(f"Available files for {identifier}: {all_files[:10]}")  # Log first 10
+            
+            # Try to find PDF first
+            pdf_files = [f for f in item.files if f['name'].endswith('.pdf')]
             if pdf_files:
                 pdf_file = pdf_files[0]['name']
-                return f"https://archive.org/download/{identifier}/{pdf_file}"
+                logger.info(f"Found PDF: {pdf_file}")
+                return {
+                    'format': 'pdf',
+                    'url': f"https://archive.org/download/{identifier}/{pdf_file}",
+                    'filename': pdf_file
+                }
             
+            # Try DJVU format
+            djvu_files = [f for f in item.files if f['name'].endswith('.djvu')]
+            if djvu_files:
+                djvu_file = djvu_files[0]['name']
+                logger.info(f"Found DJVU: {djvu_file}")
+                return {
+                    'format': 'djvu',
+                    'url': f"https://archive.org/download/{identifier}/{djvu_file}",
+                    'filename': djvu_file
+                }
+            
+            # Try to find derived PDF (often created by archive.org)
+            derived_pdf = [f for f in item.files if '_djvu.pdf' in f['name'] or 'abbyy.gz' in f['name']]
+            if derived_pdf:
+                pdf_file = derived_pdf[0]['name']
+                logger.info(f"Found derived PDF: {pdf_file}")
+                return {
+                    'format': 'pdf',
+                    'url': f"https://archive.org/download/{identifier}/{pdf_file}",
+                    'filename': pdf_file
+                }
+            
+            # Check for JP2 or image-based books
+            jp2_files = [f for f in item.files if f.get('format') == 'Single Page Processed JP2 ZIP']
+            if jp2_files:
+                logger.info(f"Found image-based book (JP2): {jp2_files[0]['name']}")
+                return {
+                    'format': 'images',
+                    'url': f"https://archive.org/download/{identifier}",
+                    'filename': None,
+                    'message': 'Image-based book - requires special processing'
+                }
+            
+            logger.warning(f"No compatible format found for {identifier}")
+            logger.warning(f"Available formats: {[f.get('format') for f in item.files[:20]]}")
             return None
             
         except Exception as e:
-            logger.error(f"Error getting PDF URL: {str(e)}")
+            logger.error(f"Error getting download URL for {identifier}: {str(e)}")
             return None
     
     async def create_scraping_job(self, 
