@@ -38,6 +38,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize scraper components
+archive_scraper = ArchiveScraper(db)
+orchestrator = ScraperOrchestrator(db)
+face_processor = FaceProcessor(db)
+
+# Background task for processing scraping queue
+scraping_task = None
+
 class FaceEntry(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
