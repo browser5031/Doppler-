@@ -493,6 +493,132 @@ const AdminPage = () => {
             </div>
           </div>
         )}
+
+        {/* Recovery Tab */}
+        {activeTab === "recovery" && (
+          <div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
+              <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+                Task Recovery System
+              </h2>
+              
+              {/* Stats Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-[#00FF94]">{recoveryStats.stuck_processing || 0}</div>
+                  <div className="text-sm text-[#A1A1AA]">Stuck Processing</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-[#FFA500]">{recoveryStats.stuck_queued || 0}</div>
+                  <div className="text-sm text-[#A1A1AA]">Stuck Queued</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-[#6366F1]">{recoveryStats.processing || 0}</div>
+                  <div className="text-sm text-[#A1A1AA]">Currently Processing</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-red-500">{recoveryStats.failed || 0}</div>
+                  <div className="text-sm text-[#A1A1AA]">Failed</div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              {stuckTasks.total_stuck > 0 && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 mb-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-red-400 mb-2">
+                        ⚠️ {stuckTasks.total_stuck} Stuck Tasks Detected
+                      </h3>
+                      <p className="text-sm text-[#A1A1AA] mb-4">
+                        These tasks have been stuck for over 30 minutes. Click below to reset them and restart processing.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={resetAllStuckTasks}
+                    className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold"
+                    data-testid="reset-stuck-tasks-button"
+                  >
+                    🔧 Reset All Stuck Tasks
+                  </Button>
+                </div>
+              )}
+
+              {stuckTasks.total_stuck === 0 && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-6 mb-6 text-center">
+                  <CheckCircle2 className="w-12 h-12 text-[#00FF94] mx-auto mb-2" />
+                  <h3 className="text-lg font-bold text-[#00FF94] mb-2">
+                    ✅ No Stuck Tasks!
+                  </h3>
+                  <p className="text-sm text-[#A1A1AA]">
+                    All tasks are progressing normally. Your scraper is running smoothly.
+                  </p>
+                </div>
+              )}
+
+              {/* Stuck Tasks List */}
+              {stuckTasks.stuck_processing && stuckTasks.stuck_processing.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold mb-4 text-red-400">Stuck Processing ({stuckTasks.stuck_processing.length})</h3>
+                  <div className="space-y-3">
+                    {stuckTasks.stuck_processing.map((task, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white/5 border border-red-500/30 rounded-lg p-4"
+                      >
+                        <div className="font-bold text-white mb-2">{task.title || task.identifier}</div>
+                        <div className="grid grid-cols-3 gap-2 text-sm text-[#A1A1AA]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                          <div>Pages: {task.pages_processed || 0}</div>
+                          <div>Faces: {task.faces_extracted || 0}</div>
+                          <div>Started: {new Date(task.started_at).toLocaleTimeString()}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {stuckTasks.stuck_queued && stuckTasks.stuck_queued.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-bold mb-4 text-[#FFA500]">Stuck Queued ({stuckTasks.stuck_queued.length})</h3>
+                  <div className="space-y-3">
+                    {stuckTasks.stuck_queued.map((task, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white/5 border border-[#FFA500]/30 rounded-lg p-4"
+                      >
+                        <div className="font-bold text-white mb-2">{task.title || task.identifier}</div>
+                        <div className="text-sm text-[#A1A1AA]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                          Updated: {new Date(task.updated_at || task.created_at).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-4">How to Use Recovery System</h3>
+              <div className="space-y-3 text-sm text-[#A1A1AA]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                <div>
+                  <span className="text-[#00FF94]">1.</span> The system automatically detects tasks stuck for over 30 minutes
+                </div>
+                <div>
+                  <span className="text-[#00FF94]">2.</span> Click "Reset All Stuck Tasks" to move them back to queued status
+                </div>
+                <div>
+                  <span className="text-[#00FF94]">3.</span> Restart scraping from the "Search" tab or use the auto-discover feature
+                </div>
+                <div>
+                  <span className="text-[#00FF94]">4.</span> Monitor progress in the "Jobs" tab
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
