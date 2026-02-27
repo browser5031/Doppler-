@@ -60,8 +60,8 @@ const AdminPage = () => {
 
   const fetchJobs = async () => {
     try {
-      const response = await axios.get(`${API}/scraper/jobs?limit=10`);
-      setJobs(response.data.jobs || []);
+      const response = await axios.get(`${API}/scraper/progress?limit=10`);
+      setJobs(response.data.yearbooks || []);
     } catch (error) {
       console.error("Error fetching jobs:", error);
     }
