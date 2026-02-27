@@ -1,8 +1,11 @@
 import os
 import asyncio
 import logging
-from typing import Dict, Optional
+import io
+import aiohttp
+from typing import Dict, Optional, List
 from datetime import datetime, timezone
+from PIL import Image
 from scraper.archive_scraper import ArchiveScraper
 from scraper.pdf_processor import PDFProcessor
 from scraper.face_processor import FaceProcessor
