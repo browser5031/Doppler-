@@ -375,32 +375,32 @@ const AdminPage = () => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      {getStatusIcon(job.status)}
+                      {getStatusIcon(job.scraping_status)}
                       <span className="font-bold">{job.identifier}</span>
                     </div>
                     <span
                       className="text-sm px-3 py-1 rounded-full capitalize"
                       style={{
                         background:
-                          job.status === "completed"
+                          job.scraping_status === "completed"
                             ? "rgba(0, 255, 148, 0.2)"
-                            : job.status === "failed"
+                            : job.scraping_status === "failed"
                             ? "rgba(239, 68, 68, 0.2)"
                             : "rgba(99, 102, 241, 0.2)",
                       }}
                     >
-                      {job.status}
+                      {job.scraping_status}
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-sm text-[#A1A1AA]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                     <div>
-                      Faces: <span className="text-[#00FF94]">{job.faces_found || 0}</span>
+                      Faces: <span className="text-[#00FF94]">{job.faces_extracted || 0}</span>
                     </div>
                     <div>
-                      Pages: <span className="text-[#6366F1]">{job.pages_processed || 0}</span>
+                      Pages: <span className="text-[#6366F1]">{job.pages_processed || 0} / {job.total_pages || '?'}</span>
                     </div>
                     <div>
-                      Priority: {job.priority}
+                      Year: {job.year || 'N/A'}
                     </div>
                   </div>
                   {job.error && (
