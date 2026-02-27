@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, File, UploadFile, HTTPException
+from fastapi import FastAPI, APIRouter, File, UploadFile, HTTPException, Query, BackgroundTasks
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -7,7 +7,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
 import numpy as np
@@ -17,6 +17,10 @@ import io
 import base64
 import traceback
 from sklearn.metrics.pairwise import cosine_similarity
+import asyncio
+from scraper.archive_scraper import ArchiveScraper
+from scraper.orchestrator import ScraperOrchestrator
+from scraper.face_processor import FaceProcessor
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
