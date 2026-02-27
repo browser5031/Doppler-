@@ -211,8 +211,13 @@ class ProductionOrchestrator:
             
             # Process in batches
             batch_size = 10
-            for i in range(0, len(images), batch_size):
-                batch = images[i:i+batch_size]
+            total_batches = (len(images) + batch_size - 1) // batch_size
+            
+            for batch_idx in range(0, len(images), batch_size):
+                batch = images[batch_idx:batch_idx+batch_size]
+                current_batch_num = (batch_idx // batch_size) + 1
+                
+                logger.info(f"{identifier}: Processing batch {current_batch_num}/{total_batches}")
                 
                 # Detect faces in parallel
                 face_results = await asyncio.gather(
@@ -228,16 +233,18 @@ class ProductionOrchestrator:
                         if result.get('page_num'):
                             processed_pages.add(result['page_num'])
                 
-                # Update progress every batch
+                # Update progress EVERY batch
                 await self.db.yearbooks.update_one(
                     {'identifier': identifier},
                     {'$set': {
                         'pages_processed': len(processed_pages),
-                        'faces_extracted': faces_found
+                        'faces_extracted': faces_found,
+                        'progress_percent': int((len(processed_pages) / len(images)) * 100),
+                        'last_updated': datetime.now(timezone.utc).isoformat()
                     }}
                 )
                 
-                logger.info(f"{identifier}: Processed {len(processed_pages)} pages, found {faces_found} faces")
+                logger.info(f"{identifier}: Batch {current_batch_num}/{total_batches} complete - Total: {len(processed_pages)} pages, {faces_found} faces")
             
             return {
                 'success': True,
