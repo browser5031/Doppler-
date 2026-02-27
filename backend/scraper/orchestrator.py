@@ -43,13 +43,28 @@ class ScraperOrchestrator:
             )
             
             # Get PDF download URL
-            pdf_url = await self.archive_scraper.get_pdf_download_url(identifier)
-            if not pdf_url:
+            pdf_info = await self.archive_scraper.get_pdf_download_url(identifier)
+            if not pdf_info:
+                error_msg = 'No compatible format found (PDF, DJVU, or images)'
                 await self.db.yearbooks.update_one(
                     {'identifier': identifier},
-                    {'$set': {'scraping_status': 'error', 'error': 'No PDF found'}}
+                    {'$set': {'scraping_status': 'error', 'error': error_msg}}
                 )
-                return {'success': False, 'error': 'No PDF file found for this yearbook'}
+                logger.error(f"No compatible format for {identifier}")
+                return {'success': False, 'error': error_msg}
+            
+            # Check if it's an image-based book
+            if pdf_info.get('format') == 'images':
+                error_msg = 'Image-based books not yet supported - needs special processing'
+                await self.db.yearbooks.update_one(
+                    {'identifier': identifier},
+                    {'$set': {'scraping_status': 'error', 'error': error_msg}}
+                )
+                return {'success': False, 'error': error_msg}
+            
+            pdf_url = pdf_info['url']
+            pdf_format = pdf_info['format']
+            logger.info(f"Processing {identifier} - Format: {pdf_format}, URL: {pdf_url}")
             
             # Download PDF
             pdf_path = f"/tmp/yearbook_processing/{identifier}.pdf"
