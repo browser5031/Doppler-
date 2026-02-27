@@ -109,7 +109,49 @@ const AdminPage = () => {
       fetchScrapingStatus();
       fetchJobs();
     } catch (error) {
-      toast.error("Failed to start scraping");
+      const errorMsg = error.response?.data?.detail || "Failed to start scraping";
+      toast.error(errorMsg);
+      console.error("Scraping error:", error);
+    }
+  };
+
+  const startBulkScraping = async () => {
+    if (searchResults.length === 0) {
+      toast.error("No search results to scrape");
+      return;
+    }
+
+    const identifiers = searchResults.map(r => r.identifier);
+    
+    try {
+      const response = await axios.post(`${API}/scraper/batch-start`, identifiers, {
+        params: {
+          max_pages: defaultPageLimit,
+        },
+      });
+      toast.success(`Started scraping ${identifiers.length} yearbooks!`);
+      fetchScrapingStatus();
+      fetchJobs();
+    } catch (error) {
+      toast.error("Failed to start bulk scraping");
+    }
+  };
+
+  const autoDiscover = async () => {
+    try {
+      const response = await axios.post(`${API}/scraper/auto-discover`, null, {
+        params: {
+          query: "high school yearbook",
+          year_start: 2000,
+          year_end: 2015,
+          limit: 200,
+          max_pages_per_book: defaultPageLimit || 50,
+        },
+      });
+      toast.success(response.data.message);
+      fetchScrapingStatus();
+    } catch (error) {
+      toast.error("Failed to auto-discover");
     }
   };
 
