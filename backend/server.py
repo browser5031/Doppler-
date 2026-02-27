@@ -336,29 +336,20 @@ async def start_scraping(
     max_pages: Optional[int] = Query(default=None, description="Limit pages to process"),
     priority: int = Query(default=5, ge=1, le=10)
 ):
-    """Start scraping a yearbook"""
+    """Start scraping a yearbook - FAST"""
     try:
-        # Create scraping job
-        job_id = await archive_scraper.create_scraping_job(
+        result = await orchestrator.start_scraping(
             identifier=identifier,
-            priority=priority,
-            options={'max_pages': max_pages}
+            options={'max_pages': max_pages, 'priority': priority}
         )
         
-        if not job_id:
-            raise HTTPException(status_code=500, detail="Failed to create scraping job")
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result.get('error', 'Failed to start scraping'))
         
-        # Start background task if not running
-        global scraping_task
-        if scraping_task is None or scraping_task.done():
-            scraping_task = asyncio.create_task(orchestrator.process_job_queue())
+        return result
         
-        return {
-            "message": "Scraping job created",
-            "job_id": job_id,
-            "identifier": identifier
-        }
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error starting scraping: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -369,30 +360,48 @@ async def start_batch_scraping(
     identifiers: List[str],
     max_pages: Optional[int] = Query(default=None)
 ):
-    """Start scraping multiple yearbooks"""
+    """Start scraping multiple yearbooks in parallel"""
     try:
-        job_ids = []
-        for identifier in identifiers:
-            job_id = await archive_scraper.create_scraping_job(
-                identifier=identifier,
-                priority=5,
-                options={'max_pages': max_pages}
-            )
-            if job_id:
-                job_ids.append(job_id)
-        
-        # Start background task if not running
-        global scraping_task
-        if scraping_task is None or scraping_task.done():
-            scraping_task = asyncio.create_task(orchestrator.process_job_queue())
-        
-        return {
-            "message": f"Created {len(job_ids)} scraping jobs",
-            "job_ids": job_ids
-        }
+        result = await orchestrator.batch_scrape(identifiers, max_pages=max_pages)
+        return result
         
     except Exception as e:
         logger.error(f"Error starting batch scraping: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/scraper/auto-discover")
+async def auto_discover_and_scrape(
+    query: str = Query(default=\"yearbook\"),
+    year_start: int = Query(default=2000),
+    year_end: int = Query(default=2015),
+    limit: int = Query(default=100),
+    max_pages_per_book: Optional[int] = Query(default=50)
+):
+    \"\"\"Auto-discover yearbooks and start scraping all - FAST TRACK TO 1M FACES\"\"\"
+    try:
+        # Search for yearbooks
+        yearbooks = await archive_scraper.search_yearbooks(
+            query=query,
+            year_start=year_start,
+            year_end=year_end,
+            limit=limit
+        )
+        
+        if not yearbooks:
+            return {'message': 'No yearbooks found', 'started': 0}
+        
+        # Start scraping all
+        identifiers = [yb['identifier'] for yb in yearbooks]
+        result = await orchestrator.batch_scrape(identifiers, max_pages=max_pages_per_book)
+        
+        return {
+            'message': f'Started scraping {len(identifiers)} yearbooks',
+            'total_yearbooks': len(identifiers),
+            'details': result
+        }
+        
+    except Exception as e:
+        logger.error(f\"Error in auto-discover: {str(e)}\")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/scraper/jobs")
