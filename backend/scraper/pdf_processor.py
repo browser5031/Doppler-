@@ -100,40 +100,21 @@ class PDFProcessor:
             logger.error(f"Error rendering page {page_num}: {str(e)}")
             return None
     
-    def detect_faces_in_image(self, image: Image.Image, min_confidence: float = 0.9) -> List[Dict]:
+    def detect_faces_in_image(self, image: Image.Image, min_confidence: float = 0.5) -> List[Dict]:
         """
-        Detect faces in an image and extract embeddings
+        Detect faces in an image using InsightFace (FAST!)
         """
         try:
-            # Convert PIL to numpy array
-            img_array = np.array(image)
+            from scraper.fast_face_detector import get_detector
             
-            # Detect faces and get embeddings
-            detections = DeepFace.represent(
-                img_path=img_array,
-                model_name="Facenet512",
-                enforce_detection=True,
-                detector_backend="opencv",
-                align=True
-            )
+            detector = get_detector()
+            faces = detector.detect_faces(image)
             
-            faces = []
-            for detection in detections:
-                # Get face region
-                facial_area = detection.get('facial_area', {})
-                embedding = detection.get('embedding')
-                
-                if embedding and facial_area:
-                    faces.append({
-                        'embedding': embedding,
-                        'facial_area': facial_area,
-                        'x': facial_area.get('x', 0),
-                        'y': facial_area.get('y', 0),
-                        'w': facial_area.get('w', 0),
-                        'h': facial_area.get('h', 0)
-                    })
+            # Filter by confidence
+            results = [f for f in faces if f.get('confidence', 1.0) >= min_confidence]
             
-            return faces
+            logger.info(f"Detected {len(results)} faces (confidence >= {min_confidence})")
+            return results
             
         except Exception as e:
             logger.debug(f"No faces detected in image: {str(e)}")
