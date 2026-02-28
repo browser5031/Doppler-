@@ -66,6 +66,18 @@ else:
     face_detector = None
     logger.warning("⚠️ Running in API-only mode (no local ML)")
 
+# Initialize Face++ service as fallback
+try:
+    facepp_service = get_facepp_service()
+    if facepp_service.enabled:
+        FACEPP_ENABLED = True
+        logger.info("✅ Face++ API service available as fallback")
+    else:
+        logger.warning("⚠️ Face++ credentials not configured")
+except Exception as e:
+    logger.warning(f"⚠️ Face++ service unavailable: {e}")
+    facepp_service = None
+
 def cosine_similarity_np(a: np.ndarray, b: np.ndarray) -> float:
     """
     Calculate cosine similarity using numpy (lightweight replacement for sklearn)
