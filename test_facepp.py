@@ -7,6 +7,9 @@ import sys
 sys.path.insert(0, '/app/backend')
 
 import asyncio
+from dotenv import load_dotenv
+load_dotenv('/app/backend/.env')
+
 from scraper.facepp_service import get_facepp_service
 
 async def test_facepp():
