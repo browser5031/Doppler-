@@ -133,7 +133,7 @@ class ProductionScraper:
                 pdf_files = [f for f in files 
                            if "pdf" in f.get("format", "").lower() 
                            and f.get("name", "").endswith(".pdf")
-                           and f.get("size", 0) > 1000]  # Skip tiny files
+                           and int(f.get("size", "0")) > 1000]  # Skip tiny files - convert to int!
                 
                 if not pdf_files:
                     logger.warning(f"⚠️  No valid PDFs found for {identifier}")
