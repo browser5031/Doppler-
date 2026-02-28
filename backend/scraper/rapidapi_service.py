@@ -71,9 +71,10 @@ class RapidAPIFaceService:
             
             logger.info("Calling RapidAPI Face Analyzer...")
             
-            # Call detect-face endpoint
+            # Call search-face-in-repository endpoint
+            # This endpoint both detects and extracts features
             response = requests.post(
-                f"{self.api_url}/api/detect-face",
+                f"{self.api_url}/search-face-in-repository",
                 json=payload,
                 headers=headers,
                 timeout=self.timeout
