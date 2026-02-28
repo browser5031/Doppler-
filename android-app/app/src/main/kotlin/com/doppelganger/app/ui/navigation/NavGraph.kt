@@ -7,11 +7,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.doppelganger.app.data.repository.DoppelgangerRepository
 import com.doppelganger.app.ui.admin.AdminScreen
+import com.doppelganger.app.ui.admin.AdminViewModel
 import com.doppelganger.app.ui.auth.AuthScreen
 import com.doppelganger.app.ui.favorites.FavoritesScreen
 import com.doppelganger.app.ui.home.HomeScreen
+import com.doppelganger.app.ui.home.HomeViewModel
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
@@ -21,11 +22,10 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun NavGraph(
-    repository: DoppelgangerRepository = hiltViewModel<AuthViewModel>().repository
-) {
+fun NavGraph() {
     val navController = rememberNavController()
-    val token by repository.getToken().collectAsState(initial = null)
+    val homeViewModel: HomeViewModel = hiltViewModel()
+    val token by homeViewModel.repository.getToken().collectAsState(initial = null)
     
     val startDestination = if (token != null) Screen.Home.route else Screen.Auth.route
     
