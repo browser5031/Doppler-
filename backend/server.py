@@ -96,7 +96,7 @@ async def root():
 @api_router.post("/upload-compare", response_model=ComparisonResponse)
 async def upload_and_compare(
     file: UploadFile = File(...),
-    top_n: int = 100
+    top_n: int = Query(default=100, ge=1, le=500, description="Number of top matches to return (1-500)")
 ):
     start_time = datetime.now()
     
