@@ -32,7 +32,7 @@ async def auto_scrape_loop():
                     'limit': 50,  # 50 yearbooks per batch
                     # max_pages_per_book removed - process ALL pages
                 },
-                timeout=60
+                timeout=300  # 5 minutes - processing all pages takes time
             )
             
             if response.status_code == 200:
