@@ -28,6 +28,10 @@ except Exception as e:
     ML_ENABLED = False
     get_detector = None
 
+# Import Face++ service as fallback
+from scraper.facepp_service import get_facepp_service
+FACEPP_ENABLED = False
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
