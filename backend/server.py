@@ -15,12 +15,18 @@ from PIL import Image
 import io
 import base64
 import traceback
-from sklearn.metrics.pairwise import cosine_similarity
+# Removed sklearn dependency - using numpy instead
 import asyncio
 from scraper.archive_scraper import ArchiveScraper
 from scraper.robust_orchestrator import RobustOrchestrator
 from scraper.face_processor import FaceProcessor
-from scraper.fast_face_detector import get_detector
+try:
+    from scraper.fast_face_detector import get_detector
+    ML_ENABLED = True
+except Exception as e:
+    logger.warning(f"ML models not available: {e}. Face detection disabled.")
+    ML_ENABLED = False
+    get_detector = None
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
