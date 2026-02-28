@@ -1,118 +1,135 @@
-# Doppelganger Android App
+# Doppelgänger Android App
 
-Native Android app built with Kotlin and Jetpack Compose for finding your doppelganger in yearbook photos!
+Native Android app for finding your doppelganger in yearbook photos!
 
-## Features
+## 📦 Download APK
 
-- 📸 **Camera Integration** - Take photo directly or choose from gallery
-- 🔍 **Face Matching** - Upload your photo and find similar faces
-- ❤️ **Save Favorites** - Save your best matches
-- 👤 **Simple Auth** - Username/password authentication
-- 👨‍💼 **Admin Panel** - Manage scraping from your phone
-- 🌙 **Dark Mode** - Beautiful dark theme
+### Option 1: GitHub Actions (Automatic Build)
 
-## Tech Stack
+1. Go to **Actions** tab in this GitHub repository
+2. Click on the latest workflow run
+3. Download `doppelganger-debug.apk` from Artifacts
+4. Install on your Android phone
 
-- **Language:** Kotlin
-- **UI:** Jetpack Compose + Material 3
-- **Architecture:** MVVM with Repository pattern
-- **Networking:** Retrofit + OkHttp
-- **Image Loading:** Coil
-- **Camera:** CameraX
-- **Storage:** DataStore + Room (for offline favorites)
-- **DI:** Hilt
-- **Async:** Kotlin Coroutines + Flow
+### Option 2: Build Locally (If you have Android Studio)
 
-## Project Structure
-
-```
-app/
-├── data/
-│   ├── api/              # API interface & models
-│   ├── repository/       # Data repositories
-│   └── local/            # Room database
-├── domain/
-│   ├── model/            # Domain models
-│   └── usecase/          # Business logic
-├── ui/
-│   ├── auth/             # Login/Register screens
-│   ├── home/             # Main upload screen
-│   ├── results/          # Match results
-│   ├── favorites/        # Saved favorites
-│   └── admin/            # Admin panel
-└── util/                 # Utilities & extensions
+```bash
+./gradlew assembleDebug
+# APK will be in: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Setup
+## 🚀 Setup
 
-### Prerequisites
-- Android Studio Hedgehog or later
-- JDK 17+
-- Minimum SDK: 24 (Android 7.0)
-- Target SDK: 34 (Android 14)
+### Configure Backend URL
 
-### Configuration
+Before building, set your backend URL:
 
-1. Update `local.properties` with your backend URL:
+1. Create `local.properties` file in root:
 ```properties
 backend.url=https://your-app.preview.emergentagent.com
 ```
 
-2. Build the project:
+2. Or set as GitHub Secret:
+   - Go to Settings → Secrets → Actions
+   - Add secret: `BACKEND_URL` = `https://your-app-url.com`
+
+## 📱 Features
+
+- ✅ Login/Register with username & password
+- ✅ Upload photo from gallery
+- ✅ AI face comparison
+- ✅ View top 50 similar matches
+- ✅ Save favorites
+- ✅ Admin panel to manage scraping
+- ✅ Dark mode UI with neon green theme
+- ✅ Material 3 Design
+
+## 🛠️ Tech Stack
+
+- **Language:** Kotlin
+- **UI:** Jetpack Compose + Material 3
+- **Architecture:** MVVM + Repository
+- **Networking:** Retrofit + OkHttp
+- **DI:** Hilt
+- **Image Loading:** Coil
+- **Storage:** DataStore
+
+## 📸 Screenshots
+
+[Add screenshots after building]
+
+## 👤 User Guide
+
+### First Time Setup
+
+1. **Install APK** on your Android device
+2. **Register** a new account
+3. **Upload a photo** from gallery
+4. **View matches** - see your top doppelgangers!
+
+### Admin Features
+
+1. Tap **Settings icon** (top right)
+2. View scraping statistics
+3. Tap **Auto-Discover** to scrape 100 new yearbooks
+4. Monitor progress
+
+## 🔧 Development
+
+### Prerequisites
+
+- Android Studio Hedgehog or later
+- JDK 17+
+- Minimum SDK 24 (Android 7.0)
+- Target SDK 34 (Android 14)
+
+### Build Commands
+
 ```bash
+# Debug build
 ./gradlew assembleDebug
-```
 
-3. Install on device/emulator:
-```bash
-./gradlew installDebug
-```
-
-## API Endpoints Used
-
-### Authentication
-- `POST /api/mobile/auth/register` - Register new user
-- `POST /api/mobile/auth/login` - Login user
-
-### Face Comparison
-- `POST /api/mobile/compare` - Upload photo and find matches
-
-### Favorites
-- `POST /api/mobile/favorites` - Add to favorites
-- `GET /api/mobile/favorites` - Get user favorites
-- `DELETE /api/mobile/favorites/{id}` - Remove favorite
-
-### Admin
-- `GET /api/mobile/admin/scraper-status` - Get scraping status
-- `POST /api/mobile/admin/start-scraping` - Start scraping yearbook
-- `POST /api/mobile/admin/auto-discover` - Auto-discover and scrape
-
-## Building APK
-
-### Debug APK
-```bash
-./gradlew assembleDebug
-# Output: app/build/outputs/apk/debug/app-debug.apk
-```
-
-### Release APK (requires signing)
-```bash
+# Release build
 ./gradlew assembleRelease
-# Output: app/build/outputs/apk/release/app-release.apk
+
+# Install on connected device
+./gradlew installDebug
+
+# Run tests
+./gradlew test
 ```
 
-## Screenshots
+## 📡 API Endpoints
 
-[Screenshots will be here once built]
+The app connects to these backend endpoints:
 
-## Permissions
+- `POST /api/mobile/auth/register` - Register user
+- `POST /api/mobile/auth/login` - Login user
+- `POST /api/mobile/compare` - Upload & compare face
+- `GET /api/mobile/favorites` - Get saved favorites
+- `GET /api/mobile/admin/scraper-status` - Admin stats
+- `POST /api/mobile/admin/auto-discover` - Start scraping
 
-```xml
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-<uses-permission android:name="android.permission.INTERNET" />
-```
+## 🐛 Troubleshooting
 
-## License
+### App crashes on launch
+- Check if backend URL is correct in `local.properties`
+- Ensure backend server is running
+
+### Can't login
+- Verify backend URL is accessible
+- Check network connection
+- Try registering a new account
+
+### No matches found
+- Database might be empty
+- Use admin panel to start scraping
+- Wait for faces to be collected
+
+## 📝 License
 
 MIT License
+
+## 👏 Credits
+
+Built with love for finding your twin! 👯‍♀️
