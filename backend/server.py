@@ -114,24 +114,40 @@ class ComparisonResponse(BaseModel):
     processing_time: float
 
 def extract_face_embedding(image_bytes: bytes) -> Optional[np.ndarray]:
-    """Extract face embedding using InsightFace - FAST (if available)"""
-    if not ML_ENABLED or face_detector is None:
-        logger.warning("ML not available - cannot extract embedding from upload")
-        return None
+    """
+    Extract face embedding using InsightFace (local) or Face++ (API fallback)
     
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        
-        # Use global InsightFace detector
-        faces = face_detector.detect_faces(img)
-        
-        if faces and len(faces) > 0:
-            # Return first face embedding
-            return np.array(faces[0]["embedding"])
-        return None
-    except Exception as e:
-        logger.error(f"Error extracting face embedding: {str(e)}")
-        return None
+    Priority:
+    1. Try InsightFace if available (fast, offline)
+    2. Fall back to Face++ API if InsightFace unavailable
+    """
+    
+    # Try InsightFace first (local ML)
+    if ML_ENABLED and face_detector is not None:
+        try:
+            img = Image.open(io.BytesIO(image_bytes))
+            faces = face_detector.detect_faces(img)
+            
+            if faces and len(faces) > 0:
+                logger.info("✅ Face detected using InsightFace (local)")
+                return np.array(faces[0]["embedding"])
+        except Exception as e:
+            logger.warning(f"InsightFace detection failed: {str(e)}, trying Face++ API")
+    
+    # Fall back to Face++ API
+    if FACEPP_ENABLED and facepp_service is not None:
+        try:
+            logger.info("🔄 Using Face++ API for face detection")
+            embedding = facepp_service.detect_face_and_get_embedding(image_bytes)
+            if embedding is not None:
+                logger.info("✅ Face detected using Face++ API")
+                return embedding
+        except Exception as e:
+            logger.error(f"Face++ API detection failed: {str(e)}")
+    
+    # No face detection method available
+    logger.warning("⚠️ No face detection service available")
+    return None
 
 @api_router.get("/")
 async def root():
