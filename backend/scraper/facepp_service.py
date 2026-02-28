@@ -58,18 +58,20 @@ class FacePlusPlusService:
             
             # Call Face++ detect API
             url = f"{self.api_endpoint}/detect"
-            params = {
+            
+            # API parameters go in data (multipart form)
+            data = {
                 "api_key": self.api_key,
                 "api_secret": self.api_secret,
-                "return_landmark": 2,  # 106 landmarks
+                "return_landmark": "2",  # 106 landmarks
                 "return_attributes": "gender,age,emotion"
             }
             
-            files = {"image_file": image_bytes}
+            files = {"image_file": ("image.jpg", image_bytes, "image/jpeg")}
             
             response = requests.post(
                 url,
-                data=params,
+                data=data,
                 files=files,
                 timeout=self.timeout
             )
