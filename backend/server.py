@@ -28,9 +28,9 @@ except Exception as e:
     ML_ENABLED = False
     get_detector = None
 
-# Import RapidAPI service as fallback
-from scraper.rapidapi_service import get_rapidapi_service
-RAPIDAPI_ENABLED = False
+# Import Luxand service as fallback
+from scraper.luxand_service import get_luxand_service
+LUXAND_ENABLED = False
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -66,17 +66,17 @@ else:
     face_detector = None
     logger.warning("⚠️ Running in API-only mode (no local ML)")
 
-# Initialize RapidAPI service as fallback
+# Initialize Luxand service as fallback
 try:
-    rapidapi_service = get_rapidapi_service()
-    if rapidapi_service.enabled:
-        RAPIDAPI_ENABLED = True
-        logger.info("✅ RapidAPI Face Analyzer available as fallback")
+    luxand_service = get_luxand_service()
+    if luxand_service.enabled:
+        LUXAND_ENABLED = True
+        logger.info("✅ Luxand.cloud Face API available as fallback")
     else:
-        logger.warning("⚠️ RapidAPI credentials not configured")
+        logger.warning("⚠️ Luxand API token not configured")
 except Exception as e:
-    logger.warning(f"⚠️ RapidAPI service unavailable: {e}")
-    rapidapi_service = None
+    logger.warning(f"⚠️ Luxand service unavailable: {e}")
+    luxand_service = None
 
 def cosine_similarity_np(a: np.ndarray, b: np.ndarray) -> float:
     """
@@ -115,11 +115,11 @@ class ComparisonResponse(BaseModel):
 
 def extract_face_embedding(image_bytes: bytes) -> Optional[np.ndarray]:
     """
-    Extract face embedding using InsightFace (local) or RapidAPI (cloud fallback)
+    Extract face embedding using InsightFace (local) or Luxand.cloud (cloud fallback)
     
     Priority:
     1. Try InsightFace if available (fast, offline)
-    2. Fall back to RapidAPI Face Analyzer if InsightFace unavailable
+    2. Fall back to Luxand.cloud if InsightFace unavailable
     """
     
     # Try InsightFace first (local ML)
@@ -132,18 +132,18 @@ def extract_face_embedding(image_bytes: bytes) -> Optional[np.ndarray]:
                 logger.info("✅ Face detected using InsightFace (local)")
                 return np.array(faces[0]["embedding"])
         except Exception as e:
-            logger.warning(f"InsightFace detection failed: {str(e)}, trying RapidAPI")
+            logger.warning(f"InsightFace detection failed: {str(e)}, trying Luxand.cloud")
     
-    # Fall back to RapidAPI Face Analyzer
-    if RAPIDAPI_ENABLED and rapidapi_service is not None:
+    # Fall back to Luxand.cloud
+    if LUXAND_ENABLED and luxand_service is not None:
         try:
-            logger.info("🔄 Using RapidAPI Face Analyzer for face detection")
-            embedding = rapidapi_service.detect_face_and_get_embedding(image_bytes)
+            logger.info("🔄 Using Luxand.cloud Face API for face detection")
+            embedding = luxand_service.detect_face_and_get_embedding(image_bytes)
             if embedding is not None:
-                logger.info("✅ Face detected using RapidAPI Face Analyzer")
+                logger.info("✅ Face detected using Luxand.cloud")
                 return embedding
         except Exception as e:
-            logger.error(f"RapidAPI detection failed: {str(e)}")
+            logger.error(f"Luxand.cloud detection failed: {str(e)}")
     
     # No face detection method available
     logger.warning("⚠️ No face detection service available")
@@ -165,7 +165,7 @@ async def upload_and_compare(
         
         user_embedding = extract_face_embedding(contents)
         if user_embedding is None:
-            if not ML_ENABLED and not RAPIDAPI_ENABLED:
+            if not ML_ENABLED and not LUXAND_ENABLED:
                 raise HTTPException(
                     status_code=503,
                     detail="Face detection service unavailable. No ML service configured."
