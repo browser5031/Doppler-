@@ -56,22 +56,22 @@ class LuxandService:
             # Convert to base64
             base64_image = base64.b64encode(image_bytes).decode('utf-8')
             
-            # Prepare request
+            # Prepare request - Luxand expects multipart form data
             headers = {
-                'token': self.api_token,
-                'Content-Type': 'application/json'
+                'token': self.api_token
             }
             
-            payload = {
-                'photo': base64_image
+            # Prepare form data with image file
+            files = {
+                'photo': ('image.jpg', image_bytes, 'image/jpeg')
             }
             
             logger.info("Calling Luxand.cloud Face API...")
             
-            # Call detect endpoint
+            # Call detect endpoint with multipart form data
             response = requests.post(
                 f"{self.api_url}/photo/detect",
-                json=payload,
+                files=files,
                 headers=headers,
                 timeout=self.timeout
             )
