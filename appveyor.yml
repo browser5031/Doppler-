@@ -1,0 +1,21 @@
+version: 1.0.{build}
+
+image: Ubuntu2204
+
+environment:
+  JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+  BACKEND_URL: http://10.0.2.2:8001
+
+install:
+  - sh: sudo apt-get update
+  - sh: sudo apt-get install -y openjdk-17-jdk
+
+build_script:
+  - sh: cd android-app
+  - sh: echo "backend.url=$BACKEND_URL" > local.properties
+  - sh: chmod +x gradlew
+  - sh: ./gradlew assembleDebug
+
+artifacts:
+  - path: android-app/app/build/outputs/apk/debug/app-debug.apk
+    name: doppelganger-debug
