@@ -44,11 +44,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize scraper components
+# Initialize scraper components (optional if ML not available)
 archive_scraper = ArchiveScraper(db)
 orchestrator = RobustOrchestrator(db, max_workers=6)
 face_processor = FaceProcessor(db)
-face_detector = get_detector()  # Initialize once globally
+
+# Initialize face detector only if ML is enabled
+if ML_ENABLED:
+    try:
+        face_detector = get_detector()
+        logger.info("✅ InsightFace initialized successfully")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not initialize face detector: {e}")
+        face_detector = None
+        ML_ENABLED = False
+else:
+    face_detector = None
+    logger.warning("⚠️ Running in API-only mode (no local ML)")
+
+def cosine_similarity_np(a: np.ndarray, b: np.ndarray) -> float:
+    """
+    Calculate cosine similarity using numpy (lightweight replacement for sklearn)
+    """
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 class FaceEntry(BaseModel):
     model_config = ConfigDict(extra="ignore")
