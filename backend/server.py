@@ -98,7 +98,11 @@ class ComparisonResponse(BaseModel):
     processing_time: float
 
 def extract_face_embedding(image_bytes: bytes) -> Optional[np.ndarray]:
-    """Extract face embedding using InsightFace - FAST"""
+    """Extract face embedding using InsightFace - FAST (if available)"""
+    if not ML_ENABLED or face_detector is None:
+        logger.warning("ML not available - cannot extract embedding from upload")
+        return None
+    
     try:
         img = Image.open(io.BytesIO(image_bytes))
         
