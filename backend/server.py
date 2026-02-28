@@ -22,6 +22,7 @@ from scraper.robust_orchestrator import RobustOrchestrator
 from scraper.face_processor import FaceProcessor
 from scraper.fast_face_detector import get_detector
 from scraper.task_recovery import TaskRecovery
+from mobile_api import mobile_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
