@@ -133,47 +133,73 @@ async def upload_and_compare(
         
         user_embedding = extract_face_embedding(contents)
         if user_embedding is None:
+            if not ML_ENABLED:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Face detection service unavailable. This deployment does not support local ML processing."
+                )
             raise HTTPException(
                 status_code=400,
                 detail="No face detected in the uploaded image. Please upload a clear photo with a visible face."
             )
         
-        faces_cursor = db.faces.find({}, {"_id": 0})
-        all_faces = await faces_cursor.to_list(None)
+        # FIXED: Use batched processing instead of loading all faces at once
+        # This prevents memory exhaustion with large databases
+        total_count = await db.faces.count_documents({})
         
-        if not all_faces:
+        if total_count == 0:
             raise HTTPException(
                 status_code=404,
                 detail="No faces in database yet. Please check back later."
             )
         
-        similarities = []
-        for face in all_faces:
-            if "embedding" in face and face["embedding"]:
-                db_embedding = np.array(face["embedding"])
-                similarity = cosine_similarity(
-                    user_embedding.reshape(1, -1),
-                    db_embedding.reshape(1, -1)
-                )[0][0]
-                
-                similarities.append({
-                    "face_id": face["face_id"],
-                    "name": face.get("name"),
-                    "year": int(face.get("year")) if face.get("year") and str(face.get("year")).isdigit() else None,
-                    "school": face.get("school"),
-                    "yearbook_url": face["yearbook_url"],
-                    "page_url": face["page_url"],
-                    "thumbnail_url": face.get("thumbnail_url"),
-                    "similarity_score": float(similarity * 100)
-                })
+        logger.info(f"Comparing against {total_count} faces in database using batched processing")
         
+        similarities = []
+        batch_size = 1000  # Process 1000 faces at a time
+        
+        # Process faces in batches to avoid memory issues
+        for skip in range(0, total_count, batch_size):
+            batch_faces = await db.faces.find(
+                {}, 
+                {"_id": 0, "face_id": 1, "name": 1, "year": 1, "school": 1, 
+                 "yearbook_url": 1, "page_url": 1, "thumbnail_url": 1, "embedding": 1}
+            ).skip(skip).limit(batch_size).to_list(batch_size)
+            
+            for face in batch_faces:
+                if "embedding" in face and face["embedding"]:
+                    try:
+                        db_embedding = np.array(face["embedding"])
+                        
+                        # Use numpy-based cosine similarity (no sklearn)
+                        similarity = cosine_similarity_np(user_embedding, db_embedding)
+                        
+                        similarities.append({
+                            "face_id": face["face_id"],
+                            "name": face.get("name"),
+                            "year": int(face.get("year")) if face.get("year") and str(face.get("year")).isdigit() else None,
+                            "school": face.get("school"),
+                            "yearbook_url": face["yearbook_url"],
+                            "page_url": face["page_url"],
+                            "thumbnail_url": face.get("thumbnail_url"),
+                            "similarity_score": float(similarity * 100)
+                        })
+                    except Exception as e:
+                        logger.debug(f"Error processing face {face.get('face_id')}: {e}")
+                        continue
+            
+            logger.debug(f"Processed batch {skip//batch_size + 1}: {len(batch_faces)} faces")
+        
+        # Sort all similarities and get top N
         similarities.sort(key=lambda x: x["similarity_score"], reverse=True)
         top_results = similarities[:top_n]
         
         processing_time = (datetime.now() - start_time).total_seconds()
         
+        logger.info(f"Comparison complete: {len(similarities)} valid comparisons, returning top {len(top_results)} in {processing_time:.2f}s")
+        
         return ComparisonResponse(
-            total_faces_compared=len(all_faces),
+            total_faces_compared=len(similarities),
             results=[SimilarityResult(**r) for r in top_results],
             processing_time=processing_time
         )
