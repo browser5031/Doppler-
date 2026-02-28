@@ -11,4 +11,4 @@ local.properties
 *.apk
 *.aab
 /app/release/
-/app/debug/
+/app/debug/gradle-8.2/
