@@ -83,18 +83,17 @@ class LuxandService:
             
             result = response.json()
             
-            # Check for errors
-            if 'error' in result:
-                logger.error(f"Luxand API error: {result['error']}")
-                return None
-            
-            # Check if faces were detected
-            faces = result.get('faces', [])
-            if not faces:
+            # Luxand returns array of faces directly
+            if not isinstance(result, list) or len(result) == 0:
                 logger.info("No faces detected by Luxand API")
                 return None
             
-            face = faces[0]  # Get first face
+            # Check for error in dict format
+            if isinstance(result, dict) and 'error' in result:
+                logger.error(f"Luxand API error: {result['error']}")
+                return None
+            
+            face = result[0]  # Get first face
             logger.info(f"Luxand detected face successfully")
             
             # Generate embedding from face data
@@ -133,28 +132,49 @@ class LuxandService:
         
         features = []
         
-        # Extract bounding box features (normalized)
-        rect = face_data.get('rect', {})
+        # Extract bounding box features (normalized) - Luxand uses 'rectangle'
+        rect = face_data.get('rectangle', {})
         if rect:
+            left = float(rect.get('left', 0))
+            top = float(rect.get('top', 0))
+            right = float(rect.get('right', 100))
+            bottom = float(rect.get('bottom', 100))
+            width = right - left
+            height = bottom - top
+            
             features.extend([
-                float(rect.get('left', 0)) / image_size[0],
-                float(rect.get('top', 0)) / image_size[1],
-                float(rect.get('width', 100)) / image_size[0],
-                float(rect.get('height', 100)) / image_size[1]
+                left / image_size[0],
+                top / image_size[1],
+                width / image_size[0],
+                height / image_size[1]
             ])
         
         # Extract age
         age = face_data.get('age', 30)
         features.append(float(age) / 100.0)
         
-        # Extract gender (0 = female, 1 = male)
-        gender = face_data.get('gender', 0)
-        features.append(float(gender))
+        # Extract gender
+        gender_data = face_data.get('gender', {})
+        if isinstance(gender_data, dict):
+            gender_value = gender_data.get('value', 'Male')
+            features.append(1.0 if gender_value == 'Male' else 0.0)
+            features.append(float(gender_data.get('probability', 0.5)))
+        else:
+            features.append(0.5)
+            features.append(0.5)
         
-        # Extract emotions (7 emotions)
-        emotions = face_data.get('emotions', {})
-        for emotion_type in ['anger', 'disgust', 'fear', 'happiness', 'neutral', 'sadness', 'surprise']:
-            features.append(float(emotions.get(emotion_type, 0)))
+        # Extract expressions (convert to emotion-like features)
+        expressions = face_data.get('expression', [])
+        expression_features = [0.0] * 7  # 7 emotion slots
+        if expressions:
+            for expr in expressions:
+                if isinstance(expr, dict):
+                    features.append(float(expr.get('probability', 0)))
+        
+        # Add age group as feature
+        age_group = face_data.get('age_group', 'adult')
+        age_group_map = {'child': 0.2, 'teen': 0.4, 'adult': 0.6, 'senior': 0.8}
+        features.append(age_group_map.get(age_group, 0.5))
         
         # Extract facial landmarks (68 points)
         landmarks = face_data.get('landmarks', [])
