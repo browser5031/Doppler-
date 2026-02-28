@@ -154,9 +154,9 @@ class ProductionScraper:
                 # Process PDF pages
                 import fitz
                 doc = fitz.open(stream=pdf_data, filetype="pdf")
-                total_pages = min(len(doc), max_pages)
+                total_pages = len(doc) if max_pages is None else min(len(doc), max_pages)
                 
-                logger.info(f"📖 Processing {total_pages} pages...")
+                logger.info(f"📖 Processing ALL {total_pages} pages (full yearbook)...")
                 
                 # Process pages in batches for efficiency
                 batch_size = 10
