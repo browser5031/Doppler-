@@ -1,0 +1,32 @@
+image: mingc/android-build-box:latest
+
+stages:
+  - build
+
+variables:
+  BACKEND_URL: "https://your-app.preview.emergentagent.com"
+
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
+build:
+  stage: build
+  script:
+    - echo "Building Android APK..."
+    - cd android-app
+    - echo "backend.url=$BACKEND_URL" > local.properties
+    - chmod +x gradlew
+    - ./gradlew assembleDebug --stacktrace
+  artifacts:
+    paths:
+      - android-app/app/build/outputs/apk/debug/app-debug.apk
+    expire_in: 1 week
+  cache:
+    paths:
+      - .gradle/wrapper
+      - .gradle/caches
+  only:
+    - main
+    - master
+  tags:
+    - docker
