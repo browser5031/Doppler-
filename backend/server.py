@@ -165,10 +165,10 @@ async def upload_and_compare(
         
         user_embedding = extract_face_embedding(contents)
         if user_embedding is None:
-            if not ML_ENABLED:
+            if not ML_ENABLED and not FACEPP_ENABLED:
                 raise HTTPException(
                     status_code=503,
-                    detail="Face detection service unavailable. This deployment does not support local ML processing."
+                    detail="Face detection service unavailable. No ML service configured."
                 )
             raise HTTPException(
                 status_code=400,
