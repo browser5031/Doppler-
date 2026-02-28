@@ -22,7 +22,7 @@ async def auto_scrape_loop():
         try:
             print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Starting batch #{batch_num}...")
             
-            # Auto-discover and scrape yearbooks
+            # Auto-discover and scrape yearbooks - ALL PAGES
             response = requests.post(
                 f"{API_URL}/scraper/auto-discover",
                 params={
@@ -30,7 +30,7 @@ async def auto_scrape_loop():
                     'year_start': 2005,
                     'year_end': 2015,
                     'limit': 50,  # 50 yearbooks per batch
-                    'max_pages_per_book': 25  # 25 pages each
+                    # max_pages_per_book removed - process ALL pages
                 },
                 timeout=60
             )
