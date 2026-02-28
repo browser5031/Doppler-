@@ -27,8 +27,11 @@ internetarchive==4.2.0
 # CORS
 starlette==0.41.6
 
+# Face++ API (for face detection in production)
+# Uses cloud API instead of local ML models
+
 # Optional: PDF processing (if needed for scraper on separate instance)
 # PyMuPDF==1.25.4
 
 # Note: InsightFace, onnxruntime, and scikit-learn removed for deployment
-# Face detection/embedding should be done via external API or separate ML service
+# Face detection handled via Face++ cloud API (free tier: 1K calls/month)
