@@ -20,15 +20,16 @@ import asyncio
 from scraper.archive_scraper import ArchiveScraper
 from scraper.robust_orchestrator import RobustOrchestrator
 from scraper.face_processor import FaceProcessor
+# Try to import ML face detector (optional)
 try:
     from scraper.fast_face_detector import get_detector
     ML_ENABLED = True
 except Exception as e:
-    logger.warning(f"ML models not available: {e}. Face detection disabled.")
+    logger.warning(f"⚠️ Local ML not available (expected in production): {e}")
     ML_ENABLED = False
     get_detector = None
 
-# Import Luxand service as fallback
+# Import Luxand service (required for production)
 from scraper.luxand_service import get_luxand_service
 LUXAND_ENABLED = False
 
@@ -53,29 +54,29 @@ archive_scraper = ArchiveScraper(db)
 orchestrator = RobustOrchestrator(db, max_workers=6)
 face_processor = FaceProcessor(db)
 
-# Initialize face detector only if ML is enabled
-if ML_ENABLED:
+# Initialize face detector only if ML is available (local dev)
+if ML_ENABLED and get_detector:
     try:
         face_detector = get_detector()
-        logger.info("✅ InsightFace initialized successfully")
+        logger.info("✅ InsightFace initialized (local development)")
     except Exception as e:
-        logger.warning(f"⚠️ Could not initialize face detector: {e}")
+        logger.warning(f"⚠️ InsightFace unavailable: {e}")
         face_detector = None
         ML_ENABLED = False
 else:
     face_detector = None
-    logger.warning("⚠️ Running in API-only mode (no local ML)")
+    logger.info("ℹ️ Running without local ML (production mode)")
 
-# Initialize Luxand service as fallback
+# Initialize Luxand service (REQUIRED for production)
 try:
     luxand_service = get_luxand_service()
     if luxand_service.enabled:
         LUXAND_ENABLED = True
-        logger.info("✅ Luxand.cloud Face API available as fallback")
+        logger.info("✅ Luxand.cloud Face API initialized and ready")
     else:
-        logger.warning("⚠️ Luxand API token not configured")
+        logger.error("❌ Luxand API token not configured - face detection will fail!")
 except Exception as e:
-    logger.warning(f"⚠️ Luxand service unavailable: {e}")
+    logger.error(f"❌ Luxand service failed to initialize: {e}")
     luxand_service = None
 
 def cosine_similarity_np(a: np.ndarray, b: np.ndarray) -> float:
