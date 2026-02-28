@@ -57,25 +57,24 @@ class RapidAPIFaceService:
             # Convert to base64
             base64_image = base64.b64encode(image_bytes).decode('utf-8')
             
-            # Prepare headers
+            # Prepare headers (form-encoded request)
             headers = {
                 'x-rapidapi-key': self.api_key,
                 'x-rapidapi-host': self.api_host,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/x-www-form-urlencoded'
             }
             
-            # Try detect endpoint first
-            payload = {
+            # Prepare form data
+            form_data = {
                 "image": f"data:image/jpeg;base64,{base64_image}"
             }
             
             logger.info("Calling RapidAPI Face Analyzer...")
             
-            # Call search-face-in-repository endpoint
-            # This endpoint both detects and extracts features
+            # Call search-face-in-repository endpoint with form data
             response = requests.post(
                 f"{self.api_url}/search-face-in-repository",
-                json=payload,
+                data=form_data,  # Use data for form-urlencoded
                 headers=headers,
                 timeout=self.timeout
             )
