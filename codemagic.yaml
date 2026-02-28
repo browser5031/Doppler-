@@ -1,0 +1,25 @@
+workflows:
+  android-workflow:
+    name: Android Build
+    max_build_duration: 60
+    environment:
+      groups:
+        - production
+      vars:
+        BACKEND_URL: "https://your-app.preview.emergentagent.com"
+      java: 17
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "backend.url=$BACKEND_URL" > android-app/local.properties
+      - name: Build Android APK
+        script: |
+          cd android-app
+          chmod +x gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - android-app/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
