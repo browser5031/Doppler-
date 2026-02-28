@@ -602,6 +602,7 @@ async def get_recovery_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 app.include_router(api_router)
+app.include_router(mobile_router)  # Mobile API endpoints
 
 app.add_middleware(
     CORSMiddleware,
