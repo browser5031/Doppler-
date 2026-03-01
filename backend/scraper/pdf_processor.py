@@ -99,7 +99,7 @@ class PDFProcessor:
             logger.error(f"Error rendering page {page_num}: {str(e)}")
             return None
     
-    def detect_faces_in_image(self, image: Image.Image, min_confidence: float = 0.5) -> List[Dict]:
+    def detect_faces_in_image(self, image: Image.Image, min_confidence: float = 0.25) -> List[Dict]:
         """
         Detect faces in an image using InsightFace (FAST!)
         """
