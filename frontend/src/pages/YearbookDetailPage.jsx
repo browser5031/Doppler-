@@ -146,7 +146,17 @@ const YearbookDetailPage = () => {
                   >
                     {/* Image */}
                     <div className="relative overflow-hidden aspect-square bg-[#0A0A0A]">
-                      {face.thumbnail_url ? (
+                      {face.face_id ? (
+                        <img
+                          src={`${process.env.REACT_APP_BACKEND_URL}/api/thumbnail/${face.face_id}`}
+                          alt={`Face from page ${face.page_num}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            e.target.src = face.thumbnail_url || '';
+                            if (!e.target.src) e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : face.thumbnail_url ? (
                         <img
                           src={face.thumbnail_url}
                           alt={`Face from page ${face.page_num}`}
