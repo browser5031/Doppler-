@@ -78,16 +78,15 @@ class BackgroundWorker:
         try:
             logger.info(f"🔄 Processing {identifier}")
             
-            # Process the yearbook (no max_pages = process all)
-            await self.orchestrator.process_yearbook(
-                identifier,
-                max_pages=None  # Process ALL pages
-            )
+            # Process the yearbook - use correct method signature
+            await self.orchestrator.process_yearbook(identifier)
             
             logger.info(f"✅ Completed {identifier}")
             
         except Exception as e:
             logger.error(f"❌ Error processing {identifier}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             # Mark as failed
             await self.db.yearbooks.update_one(
                 {'identifier': identifier},
