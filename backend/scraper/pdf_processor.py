@@ -17,15 +17,30 @@ class PDFProcessor:
         
     async def download_pdf(self, url: str, save_path: str) -> bool:
         """
-        Download PDF from URL
+        Download PDF from URL with proper redirect handling and URL encoding
         """
         try:
+            # URL encode spaces and special characters
+            from urllib.parse import quote
+            url = url.replace(' ', '%20')
+            
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=300)) as response:
+                async with session.get(
+                    url, 
+                    timeout=aiohttp.ClientTimeout(total=300),
+                    allow_redirects=True  # Follow redirects
+                ) as response:
                     if response.status == 200:
+                        content = await response.read()
                         with open(save_path, 'wb') as f:
-                            f.write(await response.read())
+                            f.write(content)
+                        logger.info(f"Successfully downloaded PDF: {len(content)} bytes")
                         return True
+                    else:
+                        logger.error(f"PDF download failed: HTTP {response.status}")
+                        return False
+        except asyncio.TimeoutError:
+            logger.error(f"PDF download timeout after 300s")
             return False
         except Exception as e:
             logger.error(f"Error downloading PDF: {str(e)}")
