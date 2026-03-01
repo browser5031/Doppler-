@@ -37,6 +37,12 @@ class FaceProcessor:
                 'location': metadata.get('location', ''),
                 'grade': metadata.get('grade', ''),
                 'additional_info': metadata.get('additional_info', {}),
+                'bbox': {
+                    'x': int(metadata.get('x', 0)),
+                    'y': int(metadata.get('y', 0)),
+                    'w': int(metadata.get('w', 0)),
+                    'h': int(metadata.get('h', 0))
+                },
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
             
