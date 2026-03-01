@@ -103,9 +103,12 @@ const ResultsPage = () => {
                 {/* Image */}
                 <div className="relative overflow-hidden aspect-[3/4] bg-[#0A0A0A]">
                   <img
-                    src={result.thumbnail_url || "https://images.unsplash.com/photo-1542850083-aff0f80c1646?w=400"}
+                    src={result.face_id ? `${process.env.REACT_APP_BACKEND_URL}/api/thumbnail/${result.face_id}` : (result.thumbnail_url || "https://images.unsplash.com/photo-1542850083-aff0f80c1646?w=400")}
                     alt={result.name || "Match"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      e.target.src = result.thumbnail_url || "https://images.unsplash.com/photo-1542850083-aff0f80c1646?w=400";
+                    }}
                   />
                   
                   {/* Similarity Badge */}
