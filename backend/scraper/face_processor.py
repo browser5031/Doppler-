@@ -50,21 +50,22 @@ class FaceProcessor:
                 face_data['has_thumbnail'] = False
             
             # Generate archive.org thumbnail URL (Option 1 - simple & free)
-            # Archive.org provides page thumbnails we can use
-            if face_data.get('page_url'):
+            # Extract page number from page_url for accuracy
+            page_number = page_num
+            if face_data.get('page_url') and '/page/' in face_data['page_url']:
                 try:
-                    # Extract identifier and page number from page_url
-                    # Format: https://archive.org/details/{identifier}/page/{page_num}
-                    parts = face_data['page_url'].split('/')
-                    identifier = parts[4] if len(parts) > 4 else yearbook_id
-                    
-                    # Archive.org thumbnail service
-                    # Shows the whole page as a thumbnail (good enough for now)
-                    face_data['thumbnail_url'] = f"https://archive.org/services/img/{identifier}/page/n{page_num}_thumb.jpg"
+                    # Extract actual page number from page_url
+                    # Format: https://archive.org/details/{id}/page/{num}
+                    page_number = face_data['page_url'].split('/page/')[-1]
                 except:
-                    face_data['thumbnail_url'] = None
-            else:
-                face_data['thumbnail_url'] = None
+                    page_number = page_num
+            
+            # Archive.org thumbnail formats
+            # Format 1: Thumbnail with 'n' prefix
+            face_data['thumbnail_url'] = f"https://archive.org/services/img/{yearbook_id}/page/n{page_number}_thumb.jpg"
+            
+            # Store alternate formats as backup
+            face_data['thumbnail_url_full'] = f"https://archive.org/download/{yearbook_id}/page/n{page_number}.jpg"
             
             await self.db.faces.insert_one(face_data)
             logger.info(f"Saved face {face_data['face_id']} from {yearbook_id} page {page_num}")
