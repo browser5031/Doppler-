@@ -44,6 +44,10 @@ orchestrator = RobustOrchestrator(db, max_workers=6)
 face_processor = FaceProcessor(db)
 face_detector = get_detector()  # Initialize once globally
 
+# Create cache directory for thumbnails
+CACHE_DIR = "/app/cache/thumbnails"
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 class FaceEntry(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
