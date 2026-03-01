@@ -121,18 +121,19 @@ async def scrape_yearbook(identifier: str, max_pages: int = 50):
 async def main():
     """Scrape multiple yearbooks"""
     yearbooks = [
-        "0001_20191231",
-        "0001_20191230", 
-        "0001_20191231_201912",
+        "0001_20191231",  # Now Showing (2010) - 128 pages
+        "0001_20191230",
+        "0001_20191231_201912",  # Good Life Nebraska (2015)
         "0003_20190906",
         "0006_20240809"
     ]
     
     logger.info(f"Starting scraper for {len(yearbooks)} yearbooks")
+    logger.info(f"Expected: ~100+ faces per yearbook = 500+ total faces")
     
     for identifier in yearbooks:
         try:
-            result = await scrape_yearbook(identifier, max_pages=30)
+            result = await scrape_yearbook(identifier, max_pages=100)  # Increase to 100 pages
             logger.info(f"✓ Completed {identifier}: {result}")
         except Exception as e:
             logger.error(f"✗ Failed {identifier}: {e}")
