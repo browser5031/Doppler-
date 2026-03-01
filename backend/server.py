@@ -534,6 +534,88 @@ async def search_all_faces(
         logger.error(f"Error searching faces: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/thumbnail/{face_id}")
+async def get_face_thumbnail(face_id: str):
+    """
+    Get cropped face thumbnail (PimEyes style)
+    Fetches page from archive.org, crops to face bbox, caches result
+    """
+    try:
+        # Check cache first
+        cache_path = os.path.join(CACHE_DIR, f"{face_id}.jpg")
+        if os.path.exists(cache_path):
+            return FileResponse(cache_path, media_type="image/jpeg")
+        
+        # Get face data from database
+        face = await db.faces.find_one({'face_id': face_id})
+        if not face:
+            raise HTTPException(status_code=404, detail="Face not found")
+        
+        # Check if bbox exists
+        bbox = face.get('bbox')
+        if not bbox or not all(k in bbox for k in ['x', 'y', 'w', 'h']):
+            # No bbox - return archive.org page thumbnail as fallback
+            yearbook_id = face.get('yearbook_id')
+            page_num = face.get('page_num')
+            if yearbook_id and page_num is not None:
+                fallback_url = f"https://archive.org/services/img/{yearbook_id}/page/n{page_num}_thumb.jpg"
+                return Response(status_code=302, headers={"Location": fallback_url})
+            raise HTTPException(status_code=404, detail="No thumbnail available")
+        
+        # Fetch page image from archive.org
+        yearbook_id = face['yearbook_id']
+        page_num = face['page_num']
+        
+        # Try different archive.org image URLs
+        image_urls = [
+            f"https://archive.org/download/{yearbook_id}/page/n{page_num}.jpg",
+            f"https://archive.org/services/img/{yearbook_id}/page/n{page_num}",
+        ]
+        
+        import requests
+        image_data = None
+        for url in image_urls:
+            try:
+                resp = requests.get(url, timeout=10, allow_redirects=True)
+                if resp.status_code == 200:
+                    image_data = resp.content
+                    break
+            except:
+                continue
+        
+        if not image_data:
+            raise HTTPException(status_code=404, detail="Could not fetch page image")
+        
+        # Open image and crop to face
+        from io import BytesIO
+        img = Image.open(BytesIO(image_data))
+        
+        # Extract bbox
+        x, y, w, h = bbox['x'], bbox['y'], bbox['w'], bbox['h']
+        
+        # Crop with some padding (10%)
+        padding = int(max(w, h) * 0.1)
+        x1 = max(0, x - padding)
+        y1 = max(0, y - padding)
+        x2 = min(img.width, x + w + padding)
+        y2 = min(img.height, y + h + padding)
+        
+        face_img = img.crop((x1, y1, x2, y2))
+        
+        # Resize to standard thumbnail size
+        face_img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+        
+        # Save to cache
+        face_img.save(cache_path, "JPEG", quality=85)
+        
+        return FileResponse(cache_path, media_type="image/jpeg")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating thumbnail for {face_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 app.include_router(api_router)
 
 app.add_middleware(
