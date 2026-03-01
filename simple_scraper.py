@@ -41,11 +41,12 @@ async def scrape_yearbook(identifier: str, max_pages: int = 50):
     faces_found = 0
     pages_processed = 0
     
-    # Try pages 0-max_pages
-    for page_num in range(max_pages):
+    # Try pages 0001-max_pages (4-digit format)
+    for page_num in range(1, max_pages + 1):
         try:
-            # Get page image from archive.org
-            url = f"https://archive.org/services/img/{identifier}/page/n{page_num}"
+            # Get page image from archive.org (correct format: 0001.jpg, 0002.jpg, etc.)
+            filename = f"{page_num:04d}.jpg"
+            url = f"https://archive.org/download/{identifier}/{filename}"
             resp = requests.get(url, timeout=15, allow_redirects=True)
             
             if resp.status_code != 200 or len(resp.content) < 1000:
