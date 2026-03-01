@@ -57,8 +57,9 @@ async def scrape_yearbook(identifier: str, max_pages: int = 50):
             # Detect faces
             faces = face_detector.detect_faces(img)
             
+            # Log all faces detected (even low confidence)
             if faces:
-                logger.info(f"  Page {page_num}: Found {len(faces)} faces")
+                logger.info(f"  Page {page_num}: Found {len(faces)} faces (conf: {[f.get('confidence', 0) for f in faces[:3]]})")
                 
                 # Save each face
                 for face in faces:
