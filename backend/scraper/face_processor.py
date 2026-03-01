@@ -40,12 +40,18 @@ class FaceProcessor:
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
             
-            # Store thumbnail as base64 if provided
+            # Instead of storing thumbnails, just store page URL
+            # Thumbnails can be fetched from archive.org on demand
+            # This saves MASSIVE storage (8KB per face = 8GB for 1M faces!)
             if face_thumbnail:
-                face_data['thumbnail_base64'] = base64.b64encode(face_thumbnail).decode('utf-8')
-                face_data['thumbnail_url'] = f"data:image/jpeg;base64,{face_data['thumbnail_base64']}"
+                # Don't store the actual image, just mark that we have it
+                face_data['has_thumbnail'] = True
             else:
-                face_data['thumbnail_url'] = None
+                face_data['has_thumbnail'] = False
+            
+            # Thumbnail URL points to the archive.org page image
+            # Archive.org provides image URLs we can use
+            face_data['thumbnail_url'] = None  # Will be generated on-demand if needed
             
             await self.db.faces.insert_one(face_data)
             logger.info(f"Saved face {face_data['face_id']} from {yearbook_id} page {page_num}")
