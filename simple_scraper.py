@@ -65,15 +65,15 @@ async def scrape_yearbook(identifier: str, max_pages: int = 50):
                 # Save each face
                 for face in faces:
                     embedding = face.get('embedding')
-                    bbox = face.get('bbox', {})
+                    bbox = face.get('facial_area', {})
                     
                     metadata = {
                         'yearbook_url': f"https://archive.org/details/{identifier}",
                         'page_url': f"https://archive.org/details/{identifier}/page/n{page_num}",
                         'x': bbox.get('x', 0),
                         'y': bbox.get('y', 0),
-                        'w': bbox.get('width', 0),
-                        'h': bbox.get('height', 0),
+                        'w': bbox.get('w', 0),
+                        'h': bbox.get('h', 0),
                         'confidence': face.get('confidence', 0)
                     }
                     
