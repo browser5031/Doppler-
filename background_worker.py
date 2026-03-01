@@ -55,15 +55,12 @@ class BackgroundWorker:
                     }).limit(slots_available).to_list(slots_available)
                     
                     # Process each yearbook
-                    tasks = []
                     for yb in yearbooks:
                         logger.info(f"⚙️  Starting: {yb['identifier']}")
-                        task = asyncio.create_task(
-                            self.process_one(yb['identifier'])
-                        )
-                        tasks.append(task)
+                        # Create task but don't await (process in background)
+                        asyncio.create_task(self.process_one(yb))
                     
-                    # Wait a bit before checking again
+                    # Wait before checking again
                     await asyncio.sleep(5)
                 else:
                     # Nothing to do, wait longer
@@ -73,15 +70,21 @@ class BackgroundWorker:
                 logger.error(f"❌ Worker error: {e}")
                 await asyncio.sleep(30)
     
-    async def process_one(self, identifier: str):
-        """Process a single yearbook"""
+    async def process_one(self, yearbook_data: dict):
+        """Process a single yearbook with full data"""
+        identifier = yearbook_data['identifier']
         try:
             logger.info(f"🔄 Processing {identifier}")
             
-            # Process the yearbook - use correct method signature
-            await self.orchestrator.process_yearbook(identifier)
+            # Process using orchestrator with correct parameters
+            options = yearbook_data.get('options', {})
+            result = await self.orchestrator.process_yearbook(
+                identifier,
+                yearbook_data,
+                options
+            )
             
-            logger.info(f"✅ Completed {identifier}")
+            logger.info(f"✅ Completed {identifier}: {result.get('faces_extracted', 0)} faces")
             
         except Exception as e:
             logger.error(f"❌ Error processing {identifier}: {e}")
