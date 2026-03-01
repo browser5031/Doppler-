@@ -57,14 +57,15 @@ function App() {
         body: formData
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Upload failed');
+        throw new Error(data.detail || 'Upload failed');
       }
 
-      const data = await response.json();
       setResults(data);
     } catch (err) {
+      console.error('Upload error:', err);
       setError(err.message || 'Failed to process image. Please try again.');
     } finally {
       setLoading(false);
