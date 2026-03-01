@@ -40,18 +40,31 @@ class FaceProcessor:
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
             
-            # Instead of storing thumbnails, just store page URL
-            # Thumbnails can be fetched from archive.org on demand
-            # This saves MASSIVE storage (8KB per face = 8GB for 1M faces!)
+            # Store face bounding box for future cropping (Option 2.5)
             if face_thumbnail:
-                # Don't store the actual image, just mark that we have it
                 face_data['has_thumbnail'] = True
+                # Store bbox if available in metadata
+                if 'bbox' in metadata:
+                    face_data['bbox'] = metadata['bbox']
             else:
                 face_data['has_thumbnail'] = False
             
-            # Thumbnail URL points to the archive.org page image
-            # Archive.org provides image URLs we can use
-            face_data['thumbnail_url'] = None  # Will be generated on-demand if needed
+            # Generate archive.org thumbnail URL (Option 1 - simple & free)
+            # Archive.org provides page thumbnails we can use
+            if face_data.get('page_url'):
+                try:
+                    # Extract identifier and page number from page_url
+                    # Format: https://archive.org/details/{identifier}/page/{page_num}
+                    parts = face_data['page_url'].split('/')
+                    identifier = parts[4] if len(parts) > 4 else yearbook_id
+                    
+                    # Archive.org thumbnail service
+                    # Shows the whole page as a thumbnail (good enough for now)
+                    face_data['thumbnail_url'] = f"https://archive.org/services/img/{identifier}/page/n{page_num}_thumb.jpg"
+                except:
+                    face_data['thumbnail_url'] = None
+            else:
+                face_data['thumbnail_url'] = None
             
             await self.db.faces.insert_one(face_data)
             logger.info(f"Saved face {face_data['face_id']} from {yearbook_id} page {page_num}")
