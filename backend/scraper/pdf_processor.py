@@ -17,33 +17,43 @@ class PDFProcessor:
         
     async def download_pdf(self, url: str, save_path: str) -> bool:
         """
-        Download PDF from URL with proper redirect handling and URL encoding
+        Download PDF from URL - using requests library for better reliability
         """
         try:
-            # URL encode spaces and special characters
+            import requests
             from urllib.parse import quote
+            
+            # URL encode spaces
             url = url.replace(' ', '%20')
             
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    url, 
-                    timeout=aiohttp.ClientTimeout(total=300),
-                    allow_redirects=True  # Follow redirects
-                ) as response:
-                    if response.status == 200:
-                        content = await response.read()
-                        with open(save_path, 'wb') as f:
-                            f.write(content)
-                        logger.info(f"Successfully downloaded PDF: {len(content)} bytes")
-                        return True
-                    else:
-                        logger.error(f"PDF download failed: HTTP {response.status}")
-                        return False
-        except asyncio.TimeoutError:
-            logger.error(f"PDF download timeout after 300s")
+            logger.info(f"Downloading PDF from: {url}")
+            
+            # Use requests library with redirects
+            response = requests.get(
+                url,
+                timeout=300,
+                allow_redirects=True,
+                stream=True
+            )
+            
+            if response.status_code == 200:
+                with open(save_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                file_size = os.path.getsize(save_path)
+                logger.info(f"✅ Downloaded PDF: {file_size} bytes")
+                return True
+            else:
+                logger.error(f"❌ PDF download failed: HTTP {response.status_code}")
+                return False
+                
+        except requests.exceptions.Timeout:
+            logger.error(f"❌ PDF download timeout after 300s")
             return False
         except Exception as e:
-            logger.error(f"Error downloading PDF: {str(e)}")
+            logger.error(f"❌ Error downloading PDF: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
     
     def extract_images_from_pdf(self, pdf_path: str, page_limit: int = None) -> List[Dict]:
