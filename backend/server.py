@@ -387,7 +387,10 @@ async def start_scraping(
     max_pages: Optional[int] = Query(default=None, description="Limit pages to process"),
     priority: int = Query(default=5, ge=1, le=10)
 ):
-    """Start scraping a yearbook - FAST"""
+    """Start scraping a yearbook"""
+    if PRODUCTION_MODE or not orchestrator:
+        raise HTTPException(status_code=503, detail="Scraping not available in production mode. Use development environment for scraping.")
+    
     try:
         result = await orchestrator.start_scraping(
             identifier=identifier,
