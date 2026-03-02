@@ -90,22 +90,6 @@ class ComparisonResponse(BaseModel):
     results: List[SimilarityResult]
     processing_time: float
 
-def extract_face_embedding(image_bytes: bytes) -> Optional[np.ndarray]:
-    """Extract face embedding using InsightFace - FAST"""
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        
-        # Use global InsightFace detector
-        faces = face_detector.detect_faces(img)
-        
-        if faces and len(faces) > 0:
-            # Return first face embedding
-            return np.array(faces[0]["embedding"])
-        return None
-    except Exception as e:
-        logger.error(f"Error extracting face embedding: {str(e)}")
-        return None
-
 @api_router.get("/")
 async def root():
     return {"message": "Doppelganger Finder API"}
