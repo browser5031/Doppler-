@@ -65,16 +65,20 @@ async def scrape_yearbook(identifier: str, max_pages: int = 50):
                 # Save each face
                 for face in faces:
                     embedding = face.get('embedding')
-                    bbox = face.get('facial_area', {})
+                    
+                    # Extract bbox - InsightFace returns it in 'bbox' key as dict
+                    bbox_data = face.get('bbox', {})
+                    if not bbox_data and 'facial_area' in face:
+                        bbox_data = face['facial_area']
                     
                     metadata = {
                         'yearbook_url': f"https://archive.org/details/{identifier}",
                         'page_url': f"https://archive.org/details/{identifier}/page/n{page_num}",
-                        'x': bbox.get('x', 0),
-                        'y': bbox.get('y', 0),
-                        'w': bbox.get('w', 0),
-                        'h': bbox.get('h', 0),
-                        'confidence': face.get('confidence', 0)
+                        'x': int(bbox_data.get('x', 0)) if bbox_data else 0,
+                        'y': int(bbox_data.get('y', 0)) if bbox_data else 0,
+                        'w': int(bbox_data.get('w', bbox_data.get('width', 0))) if bbox_data else 0,
+                        'h': int(bbox_data.get('h', bbox_data.get('height', 0))) if bbox_data else 0,
+                        'confidence': face.get('confidence', 0.9)
                     }
                     
                     await face_processor.save_face(
