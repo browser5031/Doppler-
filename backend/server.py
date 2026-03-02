@@ -38,37 +38,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize Azure Face API Manager (works in both dev and production)
-try:
-    from azure_face_manager import get_azure_face_manager
-    azure_face = get_azure_face_manager()
-    USE_AZURE = True
-    logger.info("✓ Azure Face API initialized (Production-ready)")
-except Exception as e:
-    logger.error(f"Failed to initialize Azure Face API: {e}")
-    azure_face = None
-    USE_AZURE = False
+# Initialize production-ready face comparison (NO ML models needed!)
+from production_face_comparison import ProductionFaceComparison
+face_comparer = ProductionFaceComparison()
+USE_PRODUCTION_MODE = True
+logger.info("✓ Production face comparison initialized (lightweight, no ML)")
 
 # Initialize scraper components
 archive_scraper = ArchiveScraper(db)
 face_processor = FaceProcessor(db)
 
-# Check if running in production (local ML disabled) or development (local ML enabled)
-PRODUCTION_MODE = os.environ.get('PRODUCTION_MODE', 'false').lower() == 'true'
-
-if not PRODUCTION_MODE and not USE_AZURE:
-    try:
-        from scraper.robust_orchestrator import RobustOrchestrator
-        from scraper.fast_face_detector import get_detector
-        orchestrator = RobustOrchestrator(db, max_workers=6)
-        face_detector = get_detector()
-        logger.info("✓ Local ML components initialized (Development mode)")
-    except ImportError as e:
-        logger.warning(f"Local ML components unavailable: {e}")
-        orchestrator = None
-        face_detector = None
-else:
-    logger.info("✓ Using Azure Face API (cloud-based)")
+# Check if InsightFace is available for scraping (development only)
+try:
+    from scraper.robust_orchestrator import RobustOrchestrator
+    from scraper.fast_face_detector import get_detector
+    orchestrator = RobustOrchestrator(db, max_workers=6)
+    face_detector = get_detector()
+    logger.info("✓ InsightFace available for scraping (Development mode)")
+except ImportError as e:
+    logger.info("InsightFace not available - scraping disabled in production")
     orchestrator = None
     face_detector = None
 
