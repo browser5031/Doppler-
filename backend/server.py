@@ -57,6 +57,26 @@ except ImportError as e:
     orchestrator = None
     face_detector = None
 
+# Initialize FAISS index at startup (cached in memory)
+_faiss_index_cache = None
+_faiss_last_count = 0
+
+async def get_or_build_faiss_index():
+    """Get cached FAISS index or build if needed"""
+    global _faiss_index_cache, _faiss_last_count
+    
+    current_count = await db.faces.count_documents({'embedding': {'$exists': True, '$ne': None}})
+    
+    # Build if first time or 100+ new faces
+    if _faiss_index_cache is None or (current_count - _faiss_last_count) >= 100:
+        logger.info(f"🔨 Building FAISS index ({current_count} faces)...")
+        from faiss_search import build_faiss_index_from_db
+        _faiss_index_cache = await build_faiss_index_from_db(db)
+        _faiss_last_count = current_count
+        logger.info(f"✅ FAISS index ready")
+    
+    return _faiss_index_cache
+
 # Create cache directory for thumbnails
 CACHE_DIR = "/app/cache/thumbnails"
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -154,10 +174,9 @@ async def upload_and_compare(
         logger.info(f"✓ Extracted embedding with confidence: {result.get('confidence', 0):.2f}")
         
         # Use FAISS for lightning-fast search!
-        from faiss_search import get_faiss_index
         import numpy as np
         
-        faiss_index = await get_faiss_index(db)
+        faiss_index = await get_or_build_faiss_index()
         
         if faiss_index is None:
             # Fallback to slow comparison if FAISS fails
