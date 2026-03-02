@@ -97,6 +97,16 @@ def extract_face_embedding(image_bytes: bytes) -> Optional[np.ndarray]:
 async def root():
     return {"message": "Doppelganger Finder API"}
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for deployment"""
+    try:
+        # Check MongoDB connection
+        await db.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+
 @api_router.post("/upload-compare", response_model=ComparisonResponse)
 async def upload_and_compare(
     file: UploadFile = File(...),
