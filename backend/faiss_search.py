@@ -1,6 +1,7 @@
 """
-FAISS-powered instant face search
+FAISS-powered instant face search with AUTO-REBUILD
 Uses Facebook AI Similarity Search for lightning-fast vector matching
+Auto-rebuilds index every 100 new faces
 """
 import numpy as np
 import faiss
@@ -8,6 +9,7 @@ import logging
 from typing import List, Dict, Any, Optional
 import pickle
 import os
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ class FAISSFaceSearch:
     """
     Lightning-fast face search using FAISS indexing
     Speed: 0.1-0.5 seconds for 100K faces (vs 20+ seconds brute force)
+    Auto-rebuilds every 100 new faces
     """
     
     def __init__(self, dimension: int = 512):
@@ -22,6 +25,21 @@ class FAISSFaceSearch:
         self.index = None
         self.face_metadata = []
         self.is_trained = False
+        self.last_build_count = 0  # Track face count at last build
+        self.rebuild_threshold = 100  # Rebuild every 100 faces
+        
+    def needs_rebuild(self, current_face_count: int) -> bool:
+        """Check if index needs rebuilding"""
+        if not self.is_trained:
+            return True
+        
+        new_faces = current_face_count - self.last_build_count
+        should_rebuild = new_faces >= self.rebuild_threshold
+        
+        if should_rebuild:
+            logger.info(f"🔄 Index needs rebuild: {new_faces} new faces since last build")
+        
+        return should_rebuild
         
     def build_index(self, embeddings: np.ndarray, metadata: List[Dict]):
         """
@@ -33,7 +51,7 @@ class FAISSFaceSearch:
         """
         try:
             n_faces = len(embeddings)
-            logger.info(f"Building FAISS index for {n_faces} faces...")
+            logger.info(f"🔨 Building FAISS index for {n_faces} faces...")
             
             # Normalize embeddings for cosine similarity
             faiss.normalize_L2(embeddings)
@@ -55,8 +73,9 @@ class FAISSFaceSearch:
             self.index.add(embeddings)
             self.face_metadata = metadata
             self.is_trained = True
+            self.last_build_count = n_faces  # Track build count
             
-            logger.info(f"✓ FAISS index built: {n_faces} faces indexed")
+            logger.info(f"✅ FAISS index built: {n_faces} faces indexed")
             
         except Exception as e:
             logger.error(f"Error building FAISS index: {e}")
@@ -181,11 +200,25 @@ async def build_faiss_index_from_db(db):
 # Global index instance
 _faiss_index = None
 
-async def get_faiss_index(db, rebuild=False):
-    """Get or build FAISS index"""
+async def get_faiss_index(db, force_rebuild=False):
+    """
+    Get or build FAISS index with auto-rebuild
+    Rebuilds every 100 new faces automatically
+    """
     global _faiss_index
     
-    if _faiss_index is None or rebuild:
+    # Get current face count
+    current_count = await db.faces.count_documents({'embedding': {'$exists': True, '$ne': None}})
+    
+    # Check if rebuild needed
+    should_rebuild = (
+        _faiss_index is None or 
+        force_rebuild or 
+        _faiss_index.needs_rebuild(current_count)
+    )
+    
+    if should_rebuild:
+        logger.info(f"🔄 Rebuilding FAISS index (current: {current_count} faces)")
         _faiss_index = await build_faiss_index_from_db(db)
     
     return _faiss_index
