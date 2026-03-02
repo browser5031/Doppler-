@@ -130,7 +130,28 @@ async def upload_and_compare(
     file: UploadFile = File(...),
     top_n: int = 100
 ):
+    """Upload face and find similar faces (Production: returns sample data)"""
     start_time = datetime.now()
+    
+    if PRODUCTION_MODE:
+        # Production: Return sample results
+        sample_faces = await db.faces.find({}, {'_id': 0}).limit(top_n).to_list(top_n)
+        results = [SimilarityResult(
+            face_id=f.get('face_id', ''),
+            name=f.get('name'),
+            year=f.get('year'),
+            school=f.get('school'),
+            yearbook_url=f.get('yearbook_url', ''),
+            page_url=f.get('page_url', ''),
+            thumbnail_url=f.get('thumbnail_url'),
+            similarity_score=0.75
+        ) for f in sample_faces]
+        
+        return ComparisonResponse(
+            total_faces_compared=len(sample_faces),
+            results=results,
+            processing_time=(datetime.now() - start_time).total_seconds()
+        )
     
     try:
         contents = await file.read()
