@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class AzureFaceManager:
     def __init__(self):
         """Initialize Azure Face API client"""
-        self.endpoint = os.getenv('AZURE_FACE_ENDPOINT')
+        self.endpoint = os.getenv('AZURE_FACE_ENDPOINT', '').rstrip('/')  # Remove trailing slash
         self.api_key = os.getenv('AZURE_FACE_API_KEY')
         self.person_group_id = os.getenv('AZURE_FACE_PERSON_GROUP_ID', 'yearbook-faces')
         
