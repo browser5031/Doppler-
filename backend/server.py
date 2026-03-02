@@ -38,11 +38,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize scraper components
+# Check if running in production (ML disabled) or development (ML enabled)
+PRODUCTION_MODE = os.environ.get('PRODUCTION_MODE', 'false').lower() == 'true'
+
+# Initialize scraper components (only in development)
 archive_scraper = ArchiveScraper(db)
-orchestrator = RobustOrchestrator(db, max_workers=6)
 face_processor = FaceProcessor(db)
-face_detector = get_detector()  # Initialize once globally
+
+if not PRODUCTION_MODE:
+    try:
+        from scraper.robust_orchestrator import RobustOrchestrator
+        from scraper.fast_face_detector import get_detector
+        orchestrator = RobustOrchestrator(db, max_workers=6)
+        face_detector = get_detector()
+        logger.info("✓ ML components initialized (Development mode)")
+    except ImportError as e:
+        logger.warning(f"ML components unavailable: {e}")
+        orchestrator = None
+        face_detector = None
+        PRODUCTION_MODE = True
+else:
+    logger.info("✓ Running in Production mode (ML disabled)")
+    orchestrator = None
+    face_detector = None
 
 # Create cache directory for thumbnails
 CACHE_DIR = "/app/cache/thumbnails"
