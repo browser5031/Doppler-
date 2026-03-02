@@ -62,6 +62,7 @@ const HomePage = () => {
         params: {
           top_n: 100,
         },
+        timeout: 60000, // 60 second timeout
       });
 
       setProgress(100);
