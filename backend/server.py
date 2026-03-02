@@ -84,6 +84,17 @@ class SimilarityResult(BaseModel):
     page_url: str
     thumbnail_url: Optional[str] = None
     similarity_score: float
+    
+    @field_validator('year', mode='before')
+    @classmethod
+    def validate_year(cls, v):
+        """Convert empty strings to None"""
+        if v == '' or v is None:
+            return None
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return None
 
 class ComparisonResponse(BaseModel):
     total_faces_compared: int
