@@ -602,10 +602,21 @@ async def get_face_thumbnail(face_id: str):
         if not face:
             raise HTTPException(status_code=404, detail="Face not found")
         
-        # Check if bbox exists
+        # Check if bbox exists and is valid
         bbox = face.get('bbox')
         if not bbox or not all(k in bbox for k in ['x', 'y', 'w', 'h']):
-            # No bbox - return archive.org page thumbnail as fallback
+            # No bbox - fallback to archive.org thumbnail
+            yearbook_id = face.get('yearbook_id')
+            page_num = face.get('page_num')
+            if yearbook_id and page_num is not None:
+                fallback_url = f"https://archive.org/services/img/{yearbook_id}/page/n{page_num}_thumb.jpg"
+                return Response(status_code=302, headers={"Location": fallback_url})
+            raise HTTPException(status_code=404, detail="No thumbnail available")
+        
+        # Validate bbox values
+        x, y, w, h = bbox.get('x', 0), bbox.get('y', 0), bbox.get('w', 0), bbox.get('h', 0)
+        if w <= 0 or h <= 0:
+            # Invalid bbox - fallback
             yearbook_id = face.get('yearbook_id')
             page_num = face.get('page_num')
             if yearbook_id and page_num is not None:
@@ -641,15 +652,19 @@ async def get_face_thumbnail(face_id: str):
         from io import BytesIO
         img = Image.open(BytesIO(image_data))
         
-        # Extract bbox
-        x, y, w, h = bbox['x'], bbox['y'], bbox['w'], bbox['h']
-        
-        # Crop with some padding (10%)
-        padding = int(max(w, h) * 0.1)
+        # Extract bbox with validation
         x1 = max(0, x - padding)
         y1 = max(0, y - padding)
         x2 = min(img.width, x + w + padding)
         y2 = min(img.height, y + h + padding)
+        
+        # Ensure valid crop coordinates
+        if x1 >= x2 or y1 >= y2:
+            # Invalid crop - fallback
+            yearbook_id = face['yearbook_id']
+            page_num = face['page_num']
+            fallback_url = f"https://archive.org/services/img/{yearbook_id}/page/n{page_num}_thumb.jpg"
+            return Response(status_code=302, headers={"Location": fallback_url})
         
         face_img = img.crop((x1, y1, x2, y2))
         
