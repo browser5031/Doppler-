@@ -125,61 +125,57 @@ async def upload_and_compare(
     file: UploadFile = File(...),
     top_n: int = 100
 ):
-    """Upload face and find similar faces using Azure Face API"""
+    """
+    Upload face and find doppelgangers - Works in both dev and production!
+    Development: Uses InsightFace (local)
+    Production: Uses Luxand (FREE 500/month) + FaceNet-PyTorch (lightweight)
+    """
     start_time = datetime.now()
     
-    if not USE_AZURE or not azure_face:
-        raise HTTPException(status_code=503, detail="Face recognition service not available")
-    
     try:
+        # Initialize hybrid recognizer
+        from hybrid_face_recognition import get_hybrid_recognizer
+        recognizer = get_hybrid_recognizer()
+        
+        if recognizer.get_mode() == "error":
+            raise HTTPException(
+                status_code=503,
+                detail="Face recognition service not available. Please ensure ML models are installed."
+            )
+        
         # Read uploaded image
         contents = await file.read()
-        from io import BytesIO
-        image_stream = BytesIO(contents)
+        logger.info(f"Processing upload using {recognizer.get_mode()} mode")
         
-        # Detect face in uploaded image using Azure
-        detect_result = azure_face.detect_faces(image_stream)
+        # Detect face and extract embedding
+        result = recognizer.detect_and_extract_embedding(contents)
         
-        if detect_result['status'] != 'success' or detect_result['face_count'] == 0:
+        if not result or not result.get('embedding'):
             raise HTTPException(
                 status_code=400,
                 detail="No face detected in uploaded image. Please upload a clear photo with a visible face."
             )
         
-        # Get the first detected face ID
-        query_face_id = detect_result['faces'][0]['face_id']
-        logger.info(f"Detected face ID: {query_face_id}")
+        user_embedding = result['embedding']
+        logger.info(f"✓ Extracted embedding with confidence: {result.get('confidence', 0):.2f}")
         
-        # Find similar faces in our database using Azure
-        search_result = azure_face.find_similar_faces(query_face_id, max_candidates=top_n)
+        # Find similar faces using lightweight cosine similarity
+        similar_faces = await face_comparer.find_similar_faces(
+            query_embedding=user_embedding,
+            db_collection=db.faces,
+            top_n=top_n,
+            min_similarity=0.3
+        )
         
-        if search_result['status'] != 'success':
-            raise HTTPException(status_code=500, detail=f"Face search failed: {search_result.get('message')}")
-        
-        # Get face details from MongoDB for each match
-        results = []
-        for match in search_result['matches']:
-            # The person_id in Azure corresponds to face_id in our MongoDB
-            face_doc = await db.faces.find_one({'face_id': match['person_id']})
-            
-            if face_doc:
-                results.append(SimilarityResult(
-                    face_id=face_doc.get('face_id', ''),
-                    name=face_doc.get('name'),
-                    year=face_doc.get('year'),
-                    school=face_doc.get('school'),
-                    yearbook_url=face_doc.get('yearbook_url', ''),
-                    page_url=face_doc.get('page_url', ''),
-                    thumbnail_url=face_doc.get('thumbnail_url'),
-                    similarity_score=match['similarity_score']
-                ))
+        # Format results
+        results = [SimilarityResult(**face) for face in similar_faces]
         
         processing_time = (datetime.now() - start_time).total_seconds()
         logger.info(f"✓ Found {len(results)} similar faces in {processing_time:.2f}s")
         
         return ComparisonResponse(
             total_faces_compared=await db.faces.count_documents({}),
-            results=results[:top_n],
+            results=results,
             processing_time=processing_time
         )
     
@@ -187,6 +183,8 @@ async def upload_and_compare(
         raise
     except Exception as e:
         logger.error(f"Error in upload-compare: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/seed-database")
