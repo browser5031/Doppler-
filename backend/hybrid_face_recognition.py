@@ -53,7 +53,12 @@ class HybridFaceRecognition:
         Returns: {embedding: List[float], bbox: Dict[str, int], confidence: float}
         """
         try:
-            img = Image.open(io.BytesIO(image_bytes))
+            # Reset BytesIO position if needed
+            if isinstance(image_bytes, io.BytesIO):
+                image_bytes.seek(0)
+                img = Image.open(image_bytes)
+            else:
+                img = Image.open(io.BytesIO(image_bytes))
             
             # Try InsightFace first (development)
             if self.insightface_detector:
