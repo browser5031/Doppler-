@@ -198,65 +198,11 @@ async def upload_and_compare(
             processing_time=processing_time
         )
     
-    try:
-        contents = await file.read()
-        
-        user_embedding = extract_face_embedding(contents)
-        if user_embedding is None:
-            raise HTTPException(
-                status_code=400,
-                detail="No face detected in the uploaded image. Please upload a clear photo with a visible face."
-            )
-        
-        faces_cursor = db.faces.find({}, {"_id": 0})
-        all_faces = await faces_cursor.to_list(None)
-        
-        if not all_faces:
-            raise HTTPException(
-                status_code=404,
-                detail="No faces in database yet. Please check back later."
-            )
-        
-        similarities = []
-        for face in all_faces:
-            if "embedding" in face and face["embedding"]:
-                db_embedding = np.array(face["embedding"])
-                similarity = cosine_similarity(
-                    user_embedding.reshape(1, -1),
-                    db_embedding.reshape(1, -1)
-                )[0][0]
-                
-                similarities.append({
-                    "face_id": face["face_id"],
-                    "name": face.get("name"),
-                    "year": int(face.get("year")) if face.get("year") and str(face.get("year")).isdigit() else None,
-                    "school": face.get("school"),
-                    "yearbook_url": face["yearbook_url"],
-                    "page_url": face["page_url"],
-                    "thumbnail_url": face.get("thumbnail_url"),
-                    "similarity_score": float(similarity * 100)
-                })
-        
-        similarities.sort(key=lambda x: x["similarity_score"], reverse=True)
-        top_results = similarities[:top_n]
-        
-        processing_time = (datetime.now() - start_time).total_seconds()
-        
-        return ComparisonResponse(
-            total_faces_compared=len(all_faces),
-            results=[SimilarityResult(**r) for r in top_results],
-            processing_time=processing_time
-        )
-        
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in upload_and_compare: {str(e)}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail=f"An error occurred during face comparison: {str(e)}"
-        )
+        logger.error(f"Error in upload-compare: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/seed-database")
 async def seed_database():
