@@ -38,27 +38,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Check if running in production (ML disabled) or development (ML enabled)
-PRODUCTION_MODE = os.environ.get('PRODUCTION_MODE', 'false').lower() == 'true'
+# Initialize Azure Face API Manager (works in both dev and production)
+try:
+    from azure_face_manager import get_azure_face_manager
+    azure_face = get_azure_face_manager()
+    USE_AZURE = True
+    logger.info("✓ Azure Face API initialized (Production-ready)")
+except Exception as e:
+    logger.error(f"Failed to initialize Azure Face API: {e}")
+    azure_face = None
+    USE_AZURE = False
 
-# Initialize scraper components (only in development)
+# Initialize scraper components
 archive_scraper = ArchiveScraper(db)
 face_processor = FaceProcessor(db)
 
-if not PRODUCTION_MODE:
+# Check if running in production (local ML disabled) or development (local ML enabled)
+PRODUCTION_MODE = os.environ.get('PRODUCTION_MODE', 'false').lower() == 'true'
+
+if not PRODUCTION_MODE and not USE_AZURE:
     try:
         from scraper.robust_orchestrator import RobustOrchestrator
         from scraper.fast_face_detector import get_detector
         orchestrator = RobustOrchestrator(db, max_workers=6)
         face_detector = get_detector()
-        logger.info("✓ ML components initialized (Development mode)")
+        logger.info("✓ Local ML components initialized (Development mode)")
     except ImportError as e:
-        logger.warning(f"ML components unavailable: {e}")
+        logger.warning(f"Local ML components unavailable: {e}")
         orchestrator = None
         face_detector = None
-        PRODUCTION_MODE = True
 else:
-    logger.info("✓ Running in Production mode (ML disabled)")
+    logger.info("✓ Using Azure Face API (cloud-based)")
     orchestrator = None
     face_detector = None
 
