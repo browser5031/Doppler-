@@ -30,6 +30,7 @@ ecdsa==0.19.1
 email-validator==2.3.0
 emergentintegrations==0.1.0
 facenet-pytorch==2.6.0
+faiss-cpu==1.13.2
 fastapi==0.110.1
 fastuuid==0.14.0
 filelock==3.24.3
